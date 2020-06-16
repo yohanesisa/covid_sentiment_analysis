@@ -362,11 +362,11 @@ class Main:
                     sub_model = []
                     for index_oaa in range(3):
                         index = index_c+index_oaa
-                        print index
                         sub_model.append(SVM(clas=model[index][2], C=model[index][3], tol=model[index][4], gamma=model[index][5], a=model[index][6], r=model[index][7], label=model[0][9:], alpha=model[index][9:], bias=model[index][8]))
-                    print ''
                     training_model.append(sub_model)
                     index_c += 3
+
+                print training_model 
 
                 print '----------   Classification Model '+ kernel_type +'   ----------'
                 print '%10s' % 'C','\t',"Tol",'\t',"Pos",'\t',"Net",'\t',"Neg",'\t',"True",'\t',"False",'\t',"Accuracy"

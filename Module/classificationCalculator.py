@@ -16,6 +16,9 @@ def svmClassification(training_model, kernel_type):
     true_classification = 0
     false_classification = 0
 
+    for test in testing:
+        print test
+
     for testing_index, K in enumerate(testing):
         result_OAA = { 1: 0.0, 0: 0.0, -1: 0.0 }
 
@@ -36,8 +39,6 @@ def svmClassification(training_model, kernel_type):
                 result_OAA[pov] += (float(a[i-1])*float(y[i-1])*float(K[i]))
 
             result_OAA[pov] += float(b)
-
-        # print '%5s' % str(testing_index+1), '\t', int(K[0]), '\t', max(result_OAA, key=result_OAA.get)
 
         if(int(K[0]) == max(result_OAA, key=result_OAA.get)):
             result[K[0]] += 1
