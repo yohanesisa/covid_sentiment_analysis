@@ -3,7 +3,7 @@ import sys
 import numpy as np
 from Module.helper import *
 
-def svm(K, C=10, tol=0.001, max_passes=5):
+def svm(pov, K, C, tol, max_passes):
     a = [0.0] * len(K)
     a_old = [0.0] * len(K)
     b = 0.0
@@ -17,6 +17,11 @@ def svm(K, C=10, tol=0.001, max_passes=5):
 
     E = [0.0] * len(K)
     while passes < max_passes:
+
+        sys.stdout.write('\r')
+        sys.stdout.write("POV %2d -> C: %10s Tol: %5s -> Pass %s: Calculating..." % (pov, str(C), str(tol), passes+1))
+        sys.stdout.flush()
+
         num_changed_alphas = 0
         for i in range(len(K)):
             E[i] = calculateE(K[i], y, a, b, i)
@@ -67,10 +72,6 @@ def svm(K, C=10, tol=0.001, max_passes=5):
                     b = (float(b1)+float(b2))/float(2)
 
                 num_changed_alphas += 1
-
-            sys.stdout.write('\r')
-            sys.stdout.write("Pass %d: Calculating%3s" % (passes+1, '.'*(i%4)))
-            sys.stdout.flush()
 
         if num_changed_alphas == 0:
             passes += 1

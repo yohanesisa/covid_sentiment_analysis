@@ -1,10 +1,13 @@
 class SVM:
 
-    def __init__(self, clas, C, tol, label, alpha, bias):
+    def __init__(self, clas, C, tol, gamma, a, r, label, alpha, bias):
         self.sentiment = self.convertSentiment(clas)
         self.clas = clas
         self.C = C
         self.tol = tol
+        self.gamma = gamma
+        self.a = a
+        self.r = r
         self.clas = clas
         self.label = label
         self.alpha = alpha 
@@ -21,6 +24,15 @@ class SVM:
 
     def getTol(self):
         return self.tol
+
+    def getGamma(self):
+        return self.gamma
+
+    def getA(self):
+        return self.a
+
+    def getR(self):
+        return self.r
 
     def getLabel(self):
         return self.label

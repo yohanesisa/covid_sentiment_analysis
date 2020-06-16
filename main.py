@@ -15,6 +15,8 @@ from Module.kernelCalculator import *
 from Module.svm import *
 from Module.classificationCalculator import *
 
+from parameter import *
+
 class Main:
 
     RAW_FILE = 'Data/mentah.xlsx'
@@ -103,27 +105,42 @@ class Main:
 
                     if selected_kernel is '1':
                         linear = calculateKernelLinear(training_features)
-                        linear.to_excel('Export/kernel/training/linear.xlsx', index=False)
+                        linear.to_excel('Export/kernel/training/linear.xlsx', sheet_name=str('linear'), index=False)
                         print '\nExported to Export/kernel/linear.xlsx\n'
 
                     elif selected_kernel is '2':
                         polynomial = calculateKernelPolynomial(training_features)
-                        polynomial.to_excel('Export/kernel/training/polynomial.xlsx', index=False)
+                        polynomial.to_excel('Export/kernel/training/polynomial.xlsx', sheet_name=str('polynomial'), index=False)
                         print '\nExported to Export/kernel/training/polynomial.xlsx\n'
 
                     elif selected_kernel is '3':
-                        gamma = raw_input("Enter gamma : ") 
+                        print '----------   Calculating kernel RBF   ----------'
 
-                        rbf = calculateKernelRbf(training_features, gamma=float(gamma))
-                        rbf.to_excel('Export/kernel/training/rbf.xlsx', index=False)
+                        print "Gamma's ", str(gammas)
+
+                        writer = pd.ExcelWriter('Export/kernel/training/rbf.xlsx')
+
+                        for gamma in gammas:
+                            rbf = calculateKernelRbf(training_features, gamma=float(gamma))
+                            rbf.to_excel(writer, sheet_name=str(gamma), index=False)
+
+                        writer.save()
                         print '\nExported to Export/kernel/training/rbf.xlsx\n'
 
                     elif selected_kernel is '4':
-                        a = raw_input("Enter a : ") 
-                        r = raw_input("Enter r : ") 
+                        print '----------   Calculating kernel Sigmoid   ----------'
 
-                        sigmoid = calculateKernelSigmoid(training_features, a=float(a), r=float(r))
-                        sigmoid.to_excel('Export/kernel/training/sigmoid.xlsx', index=False)
+                        print "a's ", str(aa)
+                        print "r's ", str(rr)
+
+                        writer = pd.ExcelWriter('Export/kernel/training/sigmoid.xlsx')
+
+                        for r in rr:
+                            for a in aa:
+                                sigmoid = calculateKernelSigmoid(training_features, a=float(a), r=float(r))
+                                sigmoid.to_excel(writer, sheet_name=str(a)+';'+str(r), index=False)
+
+                        writer.save()
                         print '\nExported to Export/kernel/training/sigmoid.xlsx\n'
 
         elif command is '3':
@@ -143,27 +160,15 @@ class Main:
                 for selected_kernel in sub_command.split(","):
                     if selected_kernel is '1':
                         TRAINING_KERNEL_FILE = { 'linear':'Export/kernel/training/linear.xlsx' }
-                        Cs = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1, 10, 100]
-                        tols = [0.0001, 0.001, 0.01, 0.1, 1]
-                        max_passes=5
 
                     elif selected_kernel is '2':
                         TRAINING_KERNEL_FILE = { 'polynomial':'Export/kernel/training/polynomial.xlsx' }
-                        Cs = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1, 10, 100]
-                        tols = [0.0001, 0.001, 0.01, 0.1, 1]
-                        max_passes=5
 
                     elif selected_kernel is '3':
                         TRAINING_KERNEL_FILE = { 'rbf':'Export/kernel/training/rbf.xlsx' }
-                        Cs = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1, 10, 100]
-                        tols = [0.0001, 0.001, 0.01, 0.1, 1]
-                        max_passes=5
 
                     elif selected_kernel is '4':
                         TRAINING_KERNEL_FILE = { 'sigmoid':'Export/kernel/training/sigmoid.xlsx' }
-                        Cs = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1, 10, 100]
-                        tols = [0.0001, 0.001, 0.01, 0.1, 1]
-                        max_passes=5
 
                     else:
                         print 'Back to main menu'
@@ -175,60 +180,61 @@ class Main:
                     for kernel_type in TRAINING_KERNEL_FILE:
                         training_model = { kernel_type: [] }
 
-                        master_kernel = pd.read_excel(TRAINING_KERNEL_FILE[kernel_type])
+                        kernels = pd.read_excel(TRAINING_KERNEL_FILE[kernel_type], sheet_name=None)
 
-                        training_sentiment = master_kernel[master_kernel.columns[0]].values.tolist()
-                        master_kernel = master_kernel.values.tolist()
+                        for sheet in kernels:
+                            df = pd.DataFrame(kernels[sheet])
+                            training_sentiment = df[df.columns[0]].values.tolist()
 
-                        print '----------   Calculate kernel ' + kernel_type + '   ----------'
-                        print 'Read kernel from ' + kernel_type + '.xlsx'
-                        print 'C\'s ' + str(Cs)
-                        print 'Tol\'s ' + str(tols) + '\n'
+                            master_kernel = df.values.tolist()
 
-                        for tol in tols:
-                            for c in Cs:
-                                print 'Kernel ', kernel_type,', Param SVM -> C=', c,'\ttol=', tol, '\tmax_passes=', max_passes
+                            print '\n----------   Calculate kernel ' + kernel_type + '   ----------'
+                            print 'Read kernel from ' + kernel_type + '.xlsx'
+                            print '\nC\'s \t' + str(Cs)
+                            print 'Tol\'s \t' + str(tols)
 
-                                for pov in OAA:
-                                    kernel = copy.deepcopy(master_kernel)
-                                    for item in kernel:
-                                        if item[0] == pov:                # One againts All
-                                            item[0] = 1
+                            if kernel_type == 'rbf':
+                                print 'Gamma \t' + str(sheet)
+                            
+                            if kernel_type == 'sigmoid':
+                                print 'a \t' + str(sheet.split(';')[0])
+                                print 'r \t' + str(sheet.split(';')[1])
+
+                            print ''
+
+                            for tol in tols:
+                                for c in Cs:
+                                    # print 'Param SVM -> C=', c,'\ttol=', tol, '\tmax_passes=', max_passes
+
+                                    # sys.stdout.write('\r')
+                                    # sys.stdout.write('Param SVM -> C='+ str(c) +'\ttol='+ str(tol) +'\tmax_passes='+ str(max_passes))
+                                    # sys.stdout.flush()
+
+                                    for pov in OAA:
+                                        kernel = copy.deepcopy(master_kernel)
+                                        for item in kernel:
+                                            if item[0] == pov:                # One againts All
+                                                item[0] = 1
+                                            else:
+                                                item[0] = -1
+
+                                        # Search SMO
+                                        result = svm(pov=pov, K=kernel, C=c, tol=tol, max_passes=max_passes)
+
+                                        if kernel_type == 'rbf':
+                                            training_model[kernel_type].append(SVM(clas=pov, C=c, tol=tol, gamma=sheet, a='-', r='-', label=training_sentiment, alpha=result[0], bias=result[1]))
+                                        elif kernel_type == 'sigmoid':
+                                            training_model[kernel_type].append(SVM(clas=pov, C=c, tol=tol, gamma='-', a=sheet.split(';')[0], r=sheet.split(';')[1], label=training_sentiment, alpha=result[0], bias=result[1]))
                                         else:
-                                            item[0] = -1
-
-                                    print 'Calculating alpha bias OAA class ' + str(pov)
-
-                                    # Search SMO
-                                    result = svm(kernel, C=c, tol=tol, max_passes=max_passes)
-                                    training_model[kernel_type].append(SVM(clas=pov, C=c, tol=tol, label=training_sentiment, alpha=result[0], bias=result[1]))
+                                            training_model[kernel_type].append(SVM(clas=pov, C=c, tol=tol, gamma='-', a='-', r='-', label=training_sentiment, alpha=result[0], bias=result[1]))
 
                         print('----------   Exporting Data   ----------')
                         convertTrainingModelToDataFrame(training_model, training_sentiment).to_excel('Export/model/'+ kernel_type +'.xlsx', index=False)
                         print('Exported to Export/model/'+ kernel_type +'.xlsx\n')
 
-                    os.system('say "model calculation has finished"')
+                        os.system('say "model '+ kernel_type +' generated"')     
 
-            
-                
-                
-
-        elif command is 'xxx':
-            print '----------   Load Training Model   ----------'
-            print 'Read model training from Export/model/training.xlsx\n'
-            model = pd.read_excel('Export/model/training.xlsx').values.tolist()
-
-            training_model = { 'Linear': [], 'Polynomial':[], 'RBF':[], 'Sigmoid':[] }
-
-            for index in range(1,len(model)):
-                training_model[model[index][0]].append(SVM(model[index][2], model[0][4:], model[index][4:], model[index][3]))
-
-            print '----------   Print Training Model   ----------'
-            for kernel in training_model:
-                print('----------   Training Model Kernel ' + kernel + '   ----------')
-                for model in training_model[kernel]:
-                    model.printData()
-                print '\n'
+        # ------------------------------------------------------------------------------------------------------------------------------------------------------
 
         elif command is '6':
             print '----------   Load Testing Tweet   ----------'
@@ -279,18 +285,33 @@ class Main:
                         print '\nExported to Export/kernel/testing/polynomial.xlsx\n'
 
                     elif selected_kernel is '3':
-                        gamma = raw_input("Enter gamma : ") 
+                        print '----------   Calculating kernel RBF   ----------'
 
-                        rbf = calculateTestingKernelRbf(training_features, testing_features, gamma=float(gamma))
-                        rbf.to_excel('Export/kernel/testing/rbf.xlsx', index=False)
+                        print "Gamma's ", str(gammas)
+
+                        writer = pd.ExcelWriter('Export/kernel/testing/rbf.xlsx')
+
+                        for gamma in gammas:
+                            rbf = calculateTestingKernelRbf(training_features, testing_features, gamma=float(gamma))
+                            rbf.to_excel(writer, sheet_name=str(gamma), index=False)
+
+                        writer.save()
                         print '\nExported to Export/kernel/testing/rbf.xlsx\n'
 
                     elif selected_kernel is '4':
-                        a = raw_input("Enter a : ") 
-                        r = raw_input("Enter r : ") 
+                        print '----------   Calculating kernel Sigmoid   ----------'
 
-                        sigmoid = calculateTestingKernelSigmoid(training_features, testing_features, a=float(a), r=float(r))
-                        sigmoid.to_excel('Export/kernel/testing/sigmoid.xlsx', index=False)
+                        print "a's ", str(aa)
+                        print "r's ", str(rr)
+
+                        writer = pd.ExcelWriter('Export/kernel/testing/sigmoid.xlsx')
+
+                        for r in rr:
+                            for a in aa:
+                                sigmoid = calculateTestingKernelSigmoid(training_features, testing_features, a=float(a), r=float(r))
+                                sigmoid.to_excel(writer, sheet_name=str(a)+';'+str(r), index=False)
+
+                        writer.save()
                         print '\nExported to Export/kernel/testing/sigmoid.xlsx\n'
 
         elif command is '8':
@@ -341,8 +362,9 @@ class Main:
                     sub_model = []
                     for index_oaa in range(3):
                         index = index_c+index_oaa
-                        sub_model.append(SVM(clas=model[index][2], C=model[index][3], tol=model[index][4], label=model[0][6:], alpha=model[index][6:], bias=model[index][5]))
-                    
+                        print index
+                        sub_model.append(SVM(clas=model[index][2], C=model[index][3], tol=model[index][4], gamma=model[index][5], a=model[index][6], r=model[index][7], label=model[0][9:], alpha=model[index][9:], bias=model[index][8]))
+                    print ''
                     training_model.append(sub_model)
                     index_c += 3
 

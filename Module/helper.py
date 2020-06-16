@@ -35,8 +35,8 @@ def convertFeaturesToDataFrame(training):
         data.update({ sentScore: [] })
     for tag in initData.getPosTag():
         data.update({ tag+'-PosTag': [] })
-    for word in initData.getTfidf():
-        data.update({ word+'-TFIDF': [] })
+    # for word in initData.getTfidf():
+    #     data.update({ word+'-TFIDF': [] })
     
     # Fill cell with data training
     for item in training:
@@ -51,8 +51,8 @@ def convertFeaturesToDataFrame(training):
         for tag in initData.getPosTag():
             data[tag+'-PosTag'].append(item.getPosTag()[tag])
 
-        for word in initData.getTfidf():
-            data[word+'-TFIDF'].append(item.getTfidf()[word])
+        # for word in initData.getTfidf():
+        #     data[word+'-TFIDF'].append(item.getTfidf()[word])
 
     df = pd.DataFrame(data, columns=data.keys())
     
@@ -65,6 +65,9 @@ def convertTrainingModelToDataFrame(training_model, sentimentTraining):
     data.update({ 'class': [] })
     data.update({ 'C': [] })
     data.update({ 'tol': [] })
+    data.update({ 'gamma': [] })
+    data.update({ 'a': [] })
+    data.update({ 'r': [] })
     data.update({ 'bias': [] })
 
     # Init data
@@ -81,6 +84,9 @@ def convertTrainingModelToDataFrame(training_model, sentimentTraining):
     data['class'].append('-')
     data['C'].append('-')
     data['tol'].append('-')
+    data['gamma'].append('-')
+    data['a'].append('-')
+    data['r'].append('-')
     data['bias'].append('-')
     
     for index, label in enumerate(sentimentTraining):
@@ -94,6 +100,9 @@ def convertTrainingModelToDataFrame(training_model, sentimentTraining):
             data['class'].append(sent.getClass())
             data['C'].append(sent.getC())
             data['tol'].append(sent.getTol())
+            data['gamma'].append(sent.getGamma())
+            data['a'].append(sent.getA())
+            data['r'].append(sent.getR())
             data['bias'].append(sent.getBias())
 
             for index, alpha in enumerate(sent.getAlpha()):
