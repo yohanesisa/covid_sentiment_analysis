@@ -16,6 +16,9 @@ class Tweet:
     def getSentence(self):
         return self.sentence
 
+    def setSentence(self, data):
+        self.sentence = data
+
     def getSentiment(self):
         return self.sentiment
 
@@ -59,9 +62,9 @@ class Tweet:
 
     def printData(self):
         print '-------------------------------------------------------------------------------------'
-        print 'ID        : ' + str(self.id)
-        print 'Sentiment : ' + str(self.sentiment)
-        print 'Tweet     : ' + str(self.sentence)
+        print 'ID        : ', self.id
+        print 'Sentiment : ', self.sentiment
+        print 'Tweet     : ', self.sentence
 
         if self.tokens:
             print 'Tokens    : ' + str(self.tokens)

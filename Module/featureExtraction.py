@@ -6,6 +6,8 @@ from Library.barasa import *
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 import numpy as np
 import sys
+import pandas as pd
+from collections import OrderedDict
 
 sastrawiFactory = StemmerFactory()
 stemmer = sastrawiFactory.create_stemmer()
@@ -15,11 +17,11 @@ SentWordNet = read_barasa()
 punctuation_dict = {'exclamation': 0, 'question': 0, 'quotation': 0}
 word_dict = {}
 
-def featureExtraction(training):
-    preparation(training)
-    print('----------   Feature Extraction Start   ----------')
-
-    for item in training:
+def featureExtraction(data, type='Training', training_dict_file=None):
+    print '----------   ' + type + ' Feature Extraction Start   ----------'
+    preparation(data, type, training_dict_file)
+    
+    for item in data:
         # Punctuation based feature extraction
         item.setPunctuation(punctuationBased(item.getTokens()))
         item.setTokens(removePunctuation(item.getTokens()))
@@ -32,9 +34,9 @@ def featureExtraction(training):
         item.setSentScore(sentimentScore(posTag[1]))
 
     # Stemming data before unigram TFIDF
-    for index, item in enumerate(training):
+    for index, item in enumerate(data):
         sys.stdout.write('\r')
-        sys.stdout.write("Progress %d%%" % (float((index+1))/float(len(training))*100))
+        sys.stdout.write("Progress %d%%" % (float((index+1))/float(len(data))*100))
         sys.stdout.flush()
 
         stemmed_word = []
@@ -43,15 +45,100 @@ def featureExtraction(training):
 
         item.setTokens(stemmed_word)
 
-    initWordDict(training)
-    for item in training:
+    initWordDict(data, type, training_dict_file)
+    for item in data:
         item.setTfidf(countTFIDF(item.getTokens()))
 
-    print('\n\nTotal tweet  : %d' % len(training))
-    print('Positive : %d' % countSent(training, 'positive'))
-    print('Negative : %d' % countSent(training, 'negative'))
-    print('Neutral  : %d' % countSent(training, 'neutral'))
-    print('Word     : %d \n' % len(word_dict))
+    if type == 'Training':
+        print '\n\nTotal tweet  : %d' % len(data)
+        print 'Positive : %d' % countSent(data, 1)
+        print 'Neutral  : %d' % countSent(data, 0)
+        print 'Negative : %d' % countSent(data, -1) 
+        print 'Word     : %d \n' % len(word_dict)
+
+        training_dict = OrderedDict()       # Saving punctuation dict and word dict for testing feature extraction later
+        training_dict.update({ 'key': [] })
+        training_dict.update({ 'value': [] })
+        for punctuation in punctuation_dict:
+            training_dict['key'].append('Pun-'+punctuation)
+            training_dict['value'].append(punctuation_dict[punctuation])
+        for word in word_dict:
+            training_dict['key'].append('Idf-'+word)
+            training_dict['value'].append(word_dict[word]['idf'])
+        
+        pd.DataFrame(training_dict, columns=training_dict.keys()).to_excel('Export/features/dict.xlsx', index=False)
+        print 'Exported to Export/features/dict.xlsx\n'
+    else:
+        print '\n\nTotal tweet  : %d' % len(data)
+
+
+def initWordDict(data, type='Training', training_dict_file=None):
+    global word_dict
+
+    if type == 'Training':
+        word_dict = {}
+
+        for item in data:
+            documentWord = []
+            for word in item.getTokens():
+                if word in word_dict:                           # If already exist in word dict, increment word total occurence
+                    word_dict[word]['totalOccurrence'] += 1
+                else:                                           # If not exist in word dict, add new word to word dict and count total occurence as 1 but document occurence keep 0 (will be added later)
+                    word_dict[word] = {'totalOccurrence': 1, 'docOccurrence': 0}
+
+                if word not in documentWord:                           # If word haven't appeared yet in this document, increment the word document occurence (Document Frequency)
+                    word_dict[word]['docOccurrence'] += 1
+
+                documentWord.append(word)                              # add word to list word that already appeared in this document, so word not count more than once in one document.
+
+        for word in word_dict:
+            word_dict[word]['idf'] = np.log((float(len(data))/float(word_dict[word]['docOccurrence'])))
+            # print '# IDF ' + word + '\t -> log(' + str(len(data)) + '/' + str(word_dict[word]['docOccurrence']) + ') = ' + str(np.log(float(len(data))/float(word_dict[word]['docOccurrence'])))
+    else:
+        word_dict = {}
+
+        training_word_dict = pd.read_excel(training_dict_file)
+
+        training_word_dict = training_word_dict[training_word_dict['key'] != 'Pun-exclamation']
+        training_word_dict = training_word_dict[training_word_dict['key'] != 'Pun-question']
+        training_word_dict = training_word_dict[training_word_dict['key'] != 'Pun-quotation']
+
+        training_word_dict = training_word_dict.values.tolist()
+
+        temp = OrderedDict()
+        for word in training_word_dict:
+            temp.update({ word[0][4:].encode('utf-8'): { 'totalOccurrence': None, 'docOccurrence': None, 'idf': word[1] }})
+        
+        word_dict = temp
+
+    # print '%20s' % 'Word', '\t', "IDF"
+    # for word in word_dict:
+    #     print '%20s' % word, '\t', word_dict[word]['idf']
+
+    
+def countTFIDF(tweet):
+    TF_dict = {}
+    for word in tweet:          # Calculating word occurence in a document
+        if word in TF_dict:
+            TF_dict[word] += 1
+        else:
+            TF_dict[word] = 1
+
+    for word in TF_dict:  # Calculating TF -> word document
+        # print '# TF ' + word + '\t -> ' + str(TF_dict[word]) + '/' + str(len(tweet)) + ' = ' + str(float(TF_dict[word]) / float(len(tweet)))
+        TF_dict[word] = float(TF_dict[word]) / float(len(tweet))
+
+    TFIDF_dict = OrderedDict()
+    for word in word_dict:  # Calculating TF-IDF
+        TFIDF_dict.update({ word: float(0) })
+
+        if word in TF_dict:
+            TFIDF_dict[word] = float(TF_dict[word]) * float(word_dict[word]['idf'])
+            # print '# TF-IDF ' + word + '\t = \t' + str(float(TF_dict[word])) + '\tx ' + str(float(word_dict[word]['idf']))  + '\t= ' + str(TFIDF_dict[word])
+        else:
+            TFIDF_dict[word] = float(0) * float(word_dict[word]['idf'])
+
+    return TFIDF_dict
 
 
 def sentimentScore(tweet):
@@ -97,52 +184,6 @@ def sentimentScore(tweet):
 
     return { 'posSentScore': posScore, 'negSentScore': negScore}
 
-def initWordDict(training):
-    for item in training:
-        scrap = []
-        for word in item.getTokens():
-            if word in word_dict:
-                word_dict[word]['totalOccurrence'] += 1
-            else:
-                word_dict[word] = {'totalOccurrence': 1, 'docOccurrence': 0}
-
-            if word not in scrap:
-                word_dict[word]['docOccurrence'] += 1
-
-            scrap.append(word)
-
-    for word in word_dict:
-        word_dict[word]['idf'] = np.log((float(len(training))/float(word_dict[word]['docOccurrence'])))
-        # print '# IDF ' + word + '\t -> log(' + str(len(training)) + '/' + str(word_dict[word]['docOccurrence']) + ') = ' + str(float(len(training))/float(word_dict[word]['docOccurrence']))
-
-    # print '\n Word \t \t Total \t Document \t IDF'
-    # for word in word_dict:
-    #     print word + '\t \t' + str(word_dict[word]['totalOccurrence']) + '\t' + str(word_dict[word]['docOccurrence']) + '\t \t' + str(word_dict[word]['idf'])
-
-
-def countTFIDF(tweet):
-    TF_dict = {}
-    for word in tweet:
-        if word in TF_dict:
-            TF_dict[word] += 1
-        else:
-            TF_dict[word] = 1
-
-    for word in TF_dict:  # Calculating TF
-        # print '# TF ' + word + '\t -> ' + str(TF_dict[word]) + '/' + str(len(word_dict)) + ' = ' + str(float(TF_dict[word]) / float(len(word_dict)))
-        TF_dict[word] = float(TF_dict[word]) / float(len(word_dict))
-
-    TFIDF_dict = {}
-    for word in word_dict:  # Calculating TF-IDF
-        if word in TF_dict:
-            TFIDF_dict[word] = float(TF_dict[word]) * \
-                float(word_dict[word]['idf'])
-        else:
-            TFIDF_dict[word] = float(0)
-
-    return TFIDF_dict
-
-
 def posTagger(tweet):
     dictionaryTag = {'JJ': 0, 'RB': 0, 'NN': 0, 'NNP': 0, 'NNPP': 0,
                      'NNG': 0, 'VBI': 0, 'VBT': 0, 'IN': 0, 'MD': 0,
@@ -175,12 +216,10 @@ def punctuationBased(tweet):
         if(word == '\'' or word == '``'):
             puntuationBased['quotation'] += 1
 
-    puntuationBased['exclamation'] = average(
-        float(puntuationBased['exclamation']), float(punctuation_dict['exclamation']))
-    puntuationBased['question'] = average(
-        float(puntuationBased['question']), float(punctuation_dict['question']))
-    puntuationBased['quotation'] = average(
-        float(puntuationBased['quotation']), float(punctuation_dict['quotation']))
+    puntuationBased['exclamation'] = average( float(puntuationBased['exclamation']), float(punctuation_dict['exclamation']))
+    puntuationBased['question'] = average( float(puntuationBased['question']), float(punctuation_dict['question']))
+    puntuationBased['quotation'] = average( float(puntuationBased['quotation']), float(punctuation_dict['quotation']))
+
     return puntuationBased
 
 
@@ -189,17 +228,30 @@ def removePunctuation(tweet):
     return tweet
 
 
-def preparation(training):
+def preparation(data, type='Training', training_dict_file=None):
     print('----------   Preparing Feature Extraction    ----------')
 
-    for item in training:
-        for word in item.getTokens():
-            if(word == '!'):
-                punctuation_dict['exclamation'] += 1
-            if(word == '?'):
-                punctuation_dict['question'] += 1
-            if(word == '\'' or word == '``'):
-                punctuation_dict['quotation'] += 1
+    global punctuation_dict
+
+    if type == 'Training':
+        punctuation_dict = {'exclamation': 0, 'question': 0, 'quotation': 0}
+
+        for item in data:
+            for word in item.getTokens():
+                if(word == '!'):
+                    punctuation_dict['exclamation'] += 1
+                if(word == '?'):
+                    punctuation_dict['question'] += 1
+                if(word == '\'' or word == '``'):
+                    punctuation_dict['quotation'] += 1
+    else:
+        punctuation_dict = {'exclamation': 0, 'question': 0, 'quotation': 0}
+
+        training_punc_dict = pd.read_excel(training_dict_file)
+
+        punctuation_dict['exclamation'] = int(training_punc_dict.loc[training_punc_dict['key'] == 'Pun-exclamation'].values[0][1])
+        punctuation_dict['question'] = int(training_punc_dict.loc[training_punc_dict['key'] == 'Pun-question'].values[0][1])
+        punctuation_dict['quotation'] = int(training_punc_dict.loc[training_punc_dict['key'] == 'Pun-quotation'].values[0][1])
 
     print('Punctuation Dict')
     print('     Exclamation : %d' % punctuation_dict['exclamation'])
@@ -210,4 +262,5 @@ def preparation(training):
 def average(x, y):
     if y == 0:
         return float(0)
+
     return float(x) / float(y)

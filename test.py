@@ -1,9 +1,12 @@
-from time import sleep
-import sys
+import tweepy
 
-for i in range(21):
-    sys.stdout.write('\r')
-    # the exact output you're looking for:
-    sys.stdout.write("[%-20s] %d%%" % ('='*i,5*i))
-    sys.stdout.flush()
-    sleep(0.25)
+auth = tweepy.AppAuthHandler('brYXGvHTSesmDSzRtLYR2wMvT', '125Kr7B7gQJtyvlBfOTGAk1HWDp0UUKL9OQFYKoSdJmW3Nq9lx')
+
+api = tweepy.API(auth)
+
+status = api.get_status(1220944131444203520, tweet_mode="extended")
+
+try:
+    print(status.retweeted_status.full_text)
+except AttributeError:  # Not a Retweet
+    print(status.full_text)

@@ -43,10 +43,8 @@ def calculateKernelPolynomial(data):
 
     return pd.DataFrame(kernel)
 
-def calculateKernelRbf(data):
+def calculateKernelRbf(data, gamma=0.5):
     print '----------   Calculating kernel RBF   ----------'
-
-    gamma = 0.5
 
     data = data.values
     kernel = []
@@ -55,7 +53,7 @@ def calculateKernelRbf(data):
         for i in range(len(data)):                        # loop over item
             sub = 0.0
             for j in range(1,len(tweet)):                 # loop over features
-                sub += pow(abs(float(data[n][j])-float(data[i][j])), 2)
+                sub += pow(float(data[n][j])-float(data[i][j]), 2)
             
             sub = np.exp((-gamma)*(float(sub)))
 
@@ -67,11 +65,8 @@ def calculateKernelRbf(data):
 
     return pd.DataFrame(kernel)
 
-def calculateKernelSigmoid(data):
+def calculateKernelSigmoid(data, a=1, r=1):
     print '----------   Calculate kernel Sigmoid   ----------'
-
-    a = 1
-    r = 1
 
     data = data.values
     kernel = []
@@ -88,6 +83,100 @@ def calculateKernelSigmoid(data):
 
         sys.stdout.write('\r')
         sys.stdout.write("Calculating %d%%" % (float((n+1))/float(len(data))*100))
+        sys.stdout.flush()
+
+    return pd.DataFrame(kernel)
+
+def calculateTestingKernelLinear(training_data, testing_data):
+    print '----------   Calculate kernel linear   ----------'
+
+    training_data = training_data.values
+    testing_data = testing_data.values
+
+    kernel = []
+    for u, testing in enumerate(testing_data):
+        kernel.append([testing_data[u][0]])
+        for t in range(len(training_data)):
+            sub = 0.0
+            for j in range(1,len(testing)):
+                sub += (float(testing_data[u][j])*float(training_data[t][j]))
+            
+            kernel[u].append(sub)
+
+        sys.stdout.write('\r')
+        sys.stdout.write("Calculating %d%%" % (float((u+1))/float(len(testing_data))*100))
+        sys.stdout.flush()
+
+    return pd.DataFrame(kernel)
+
+def calculateTestingKernelPolynomial(training_data, testing_data):
+    print '----------   Calculate kernel polynomial   ----------'
+
+    training_data = training_data.values
+    testing_data = testing_data.values
+
+    kernel = []
+    for u, testing in enumerate(testing_data):
+        kernel.append([testing_data[u][0]])
+        for t in range(len(training_data)):
+            sub = 0.0
+            for j in range(1,len(testing)):
+                sub += float(testing_data[u][j])*float(training_data[t][j])
+            
+            sub = pow(1 + float(sub), 2)
+
+            kernel[u].append(sub)
+
+        sys.stdout.write('\r')
+        sys.stdout.write("Calculating %d%%" % (float((u+1))/float(len(testing_data))*100))
+        sys.stdout.flush()
+
+    return pd.DataFrame(kernel)
+
+def calculateTestingKernelRbf(training_data, testing_data, gamma=0.5):
+    print '----------   Calculate kernel RBF   ----------'
+
+    training_data = training_data.values
+    testing_data = testing_data.values
+
+    kernel = []
+    for u, testing in enumerate(testing_data):
+        kernel.append([testing_data[u][0]])
+        for t in range(len(training_data)):
+            sub = 0.0
+            for j in range(1,len(testing)):
+                sub += pow(float(testing_data[u][j])-float(training_data[t][j]), 2)
+            
+            sub = np.exp((-gamma)*(float(sub)))
+
+            kernel[u].append(sub)
+
+        sys.stdout.write('\r')
+        sys.stdout.write("Calculating %d%%" % (float((u+1))/float(len(testing_data))*100))
+        sys.stdout.flush()
+
+    return pd.DataFrame(kernel)
+
+def calculateTestingKernelSigmoid(training_data, testing_data, a=1, r=1):
+    print '----------   Calculate kernel Sigmoid   ----------'
+
+    training_data = training_data.values
+    testing_data = testing_data.values
+
+    kernel = []
+    for u, testing in enumerate(testing_data):
+        kernel.append([testing_data[u][0]])
+        for t in range(len(training_data)):
+            sub = 0.0
+            for j in range(1,len(testing)):
+                sub += float(testing_data[u][j])*float(training_data[t][j])
+            
+            sub = np.tanh(float(a)*float(sub)+float(r))
+
+            kernel[u].append(sub)
+
+        sys.stdout.write('\r')
+        sys.stdout.write("Calculating %d%%" % (float((u+1))/float(len(testing_data))*100))
         sys.stdout.flush()
 
     return pd.DataFrame(kernel)

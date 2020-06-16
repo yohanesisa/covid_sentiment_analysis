@@ -3,7 +3,7 @@ import sys
 import numpy as np
 from Module.helper import *
 
-def smo(K, C, tol, max_passes):
+def svm(K, C=10, tol=0.001, max_passes=5):
     a = [0.0] * len(K)
     a_old = [0.0] * len(K)
     b = 0.0
@@ -69,7 +69,7 @@ def smo(K, C, tol, max_passes):
                 num_changed_alphas += 1
 
             sys.stdout.write('\r')
-            sys.stdout.write("Phase %d: Calculating%3s" % (passes+1, '.'*(i%4)))
+            sys.stdout.write("Pass %d: Calculating%3s" % (passes+1, '.'*(i%4)))
             sys.stdout.flush()
 
         if num_changed_alphas == 0:
@@ -86,7 +86,7 @@ def calculateE(K, y, a, b, i):
     for m in range(len(K)):
         E += (float(a[m])*float(y[m])*float(K[m]))
 
-    E += b
+    E += float(b)
     E -= float(y[i])
 
     return E

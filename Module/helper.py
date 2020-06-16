@@ -8,7 +8,22 @@ def countSent(training, sentiment):
             count = count + 1
     return count
 
-def convertToDataFrame(training):
+def convertRawToDataFrame(raw):
+    data = OrderedDict()
+    data.update({ 'id': [] })
+    data.update({ 'sentence': [] })
+    data.update({ 'sentiment': [] })
+
+    for item in raw:
+        data['id'].append(raw[item].getId())
+        data['sentence'].append(raw[item].getSentence())
+        data['sentiment'].append(raw[item].getSentiment())
+
+    df = pd.DataFrame(data, columns=data.keys())
+
+    return df
+
+def convertFeaturesToDataFrame(training):
     data = OrderedDict()
     data.update({ 'sentimentLabel': [] })
 
@@ -23,10 +38,9 @@ def convertToDataFrame(training):
     for word in initData.getTfidf():
         data.update({ word+'-TFIDF': [] })
     
-
     # Fill cell with data training
     for item in training:
-        data['sentimentLabel'].append(item.getSentimentLabel())
+        data['sentimentLabel'].append(item.getSentiment())
 
         for punctuation in item.getPunctuation():
             data[punctuation+'-Punc'].append(item.getPunctuation()[punctuation])
@@ -39,6 +53,51 @@ def convertToDataFrame(training):
 
         for word in initData.getTfidf():
             data[word+'-TFIDF'].append(item.getTfidf()[word])
+
+    df = pd.DataFrame(data, columns=data.keys())
+    
+    return df
+
+def convertTrainingModelToDataFrame(training_model, sentimentTraining):
+    data = OrderedDict()
+    data.update({ 'kernel': [] })
+    data.update({ 'sentiment': [] })
+    data.update({ 'class': [] })
+    data.update({ 'C': [] })
+    data.update({ 'tol': [] })
+    data.update({ 'bias': [] })
+
+    # Init data
+    for kernel in training_model:
+        if training_model[kernel] != []:
+            initData = training_model[kernel]
+            break
+
+    for alpha in range(len(initData[0].getAlpha())):
+        data.update({ 'alpha'+str(alpha): [] })
+
+    data['kernel'].append('-')
+    data['sentiment'].append('-')
+    data['class'].append('-')
+    data['C'].append('-')
+    data['tol'].append('-')
+    data['bias'].append('-')
+    
+    for index, label in enumerate(sentimentTraining):
+        data['alpha'+str(index)].append(label)
+
+    # Fill cell with data training
+    for kernel in training_model:
+        for sent in training_model[kernel]:
+            data['kernel'].append(kernel)
+            data['sentiment'].append(sent.getSentiment())
+            data['class'].append(sent.getClass())
+            data['C'].append(sent.getC())
+            data['tol'].append(sent.getTol())
+            data['bias'].append(sent.getBias())
+
+            for index, alpha in enumerate(sent.getAlpha()):
+                data['alpha'+str(index)].append(alpha)
 
     df = pd.DataFrame(data, columns=data.keys())
 

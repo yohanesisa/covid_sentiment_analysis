@@ -11,11 +11,15 @@ emoticons = [':)', ':]', '=)', ':-)', ':(', ':[', '=(', ':-(', ':p', ':P', '=P',
              'B-)', '^_^', '-_-', '>:o', '>:O', ':v', ':3', '8|', 'B|', '8-|', 'B-|', '>:(', ':/', ':\\', ':-/', ':-\\', ':\'(', 'O:)', ':*', ':-*', '<3', '(y)', '(Y)']
 escapedEmoticons = [re.escape(x) for x in emoticons]
 
-punctuations = ['#', '$', '%', '&', '(', ')', '*', '+', ',', '.', '/', ':',
-                ';', '<', '=', '>', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~']
+# punctuations = ['#', '$', '%', '&', '(', ')', '*', '+', ',', '.', '/', ':',
+#                 ';', '<', '=', '>', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~']
+
+punctuations = ['#', '$', '%', '(', ')', '*', '+', ',', '.', '/', ':',
+                ';', '<', '=', '>', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~', '&amp;', '&']
+
 escapedPunctuations = [re.escape(x) for x in punctuations]
 
-slangwords = [i.strip().split(';') for i in io.open('data/slangwords.csv', encoding='utf-8-sig')]
+slangwords = [i.strip().split(';') for i in io.open('Data/preprocessing/slangwords.csv', encoding='utf-8-sig')]
 slangwords = {slang: (standard) for slang, standard in slangwords}
 
 sastrawiFactory = StopWordRemoverFactory()
@@ -49,20 +53,18 @@ def caseFolding(tweet):
     return result
 
 def removeHashtagUrlMention(tweet):
-    tweet = re.sub(r'(\B#\w+)', '', tweet)  # remove hashtag
-    tweet = re.sub(r'(\B@\w+)', '', tweet)  # remove mention
-    tweet = re.sub(r'((http(s?):\/\/)?(www\.?)\w*)(\S*)', '', tweet)  # remove url
+    tweet = re.sub(r'(\B#\w+)', ' ', tweet)  # remove hashtag
+    tweet = re.sub(r'(\B@\w+)', ' ', tweet)  # remove mention
+    tweet = re.sub(r'((http(s?):\/\/)+\S*)', ' ', tweet)  # remove url
     return tweet
 
 def removeEmoticon(tweet):
-    tweet = demoji.replace(tweet, '')  # remove emoji
-    tweet = re.sub('|'.join(escapedEmoticons), '', tweet)  # remove emoticon
+    tweet = demoji.replace(tweet, ' ')  # remove emoji
+    tweet = re.sub('|'.join(escapedEmoticons), ' ', tweet)  # remove emoticon
     return tweet
 
 def removePunctuation(tweet):
-    tweet = re.sub('|'.join(escapedPunctuations), '', tweet)  # remove punctuation
-    # tweet = re.sub(r'(\!)', r'\1'+' \! ', tweet)
-    # tweet = re.sub(r'(\?)', r'\1'+' \? ', tweet)
+    tweet = re.sub('|'.join(escapedPunctuations), ' ', tweet)  # remove punctuation
     tweet = re.sub(r'(\')', ' \' ', tweet)
     tweet = re.sub(r'(\")', ' \" ', tweet)
     return tweet
