@@ -1,28 +1,16 @@
 import copy
 import pandas as pd
+from Model.result import Result
 
-def svmClassification(training_model, kernel_type):
-    
-    if kernel_type == 'linear':
-        testing = pd.read_excel('Export/kernel/testing/linear.xlsx').values.tolist()
-    elif kernel_type == 'polynomial':
-        testing = pd.read_excel('Export/kernel/testing/polynomial.xlsx').values.tolist()
-    elif kernel_type == 'rbf':
-        testing = pd.read_excel('Export/kernel/testing/rbf.xlsx').values.tolist()
-    elif kernel_type == 'sigmoid':
-        testing = pd.read_excel('Export/kernel/testing/sigmoid.xlsx').values.tolist()
-
+def svmClassification(training_model, testing_kernel, kernel_type):
     result = { 1: 0, 0: 0, -1: 0 }
     true_classification = 0
     false_classification = 0
 
-    for test in testing:
-        print test
-
-    for testing_index, K in enumerate(testing):
+    for testing_index, K in enumerate(testing_kernel):
         result_OAA = { 1: 0.0, 0: 0.0, -1: 0.0 }
 
-        OAA = [1, 0, -1]
+        OAA = [1,0,-1]
         for index, pov in enumerate(OAA):
             a = training_model[index].getAlpha()
             b = training_model[index].getBias()
@@ -34,7 +22,6 @@ def svmClassification(training_model, kernel_type):
                 else:
                     y[index_y] = -1
 
-            # result_OAA = 0.0
             for i in range(1,len(K)):
                 result_OAA[pov] += (float(a[i-1])*float(y[i-1])*float(K[i]))
 
@@ -46,4 +33,6 @@ def svmClassification(training_model, kernel_type):
         else:
             false_classification += 1
 
-    print '%10s' % training_model[0].getC(),'\t', training_model[0].getTol(),'\t', result[1],'\t', result[0],'\t', result[-1],'\t', true_classification,'\t', false_classification,'\t', (float(true_classification)/float(len(testing))*100), '%'
+    accuracy = (float(true_classification)/float(len(testing_kernel))*100)
+
+    return Result(kernel=kernel_type, C=training_model[0].getC(), tol=training_model[0].getTol(), gamma=training_model[0].getGamma(), a=training_model[0].getA(), r=training_model[0].getR(), accuracy=accuracy)

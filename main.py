@@ -3,6 +3,7 @@ import sys
 import copy
 import os
 import math
+import time
 import pandas as pd
 from collections import OrderedDict
 from Model.tweet import Tweet
@@ -14,8 +15,7 @@ from Module.helper import *
 from Module.kernelCalculator import *
 from Module.svm import *
 from Module.classificationCalculator import *
-
-from parameter import *
+from Export.parameter import *
 
 class Main:
 
@@ -183,10 +183,10 @@ class Main:
                         kernels = pd.read_excel(TRAINING_KERNEL_FILE[kernel_type], sheet_name=None)
 
                         for sheet in kernels:
-                            df = pd.DataFrame(kernels[sheet])
-                            training_sentiment = df[df.columns[0]].values.tolist()
+                            sheetDF = pd.DataFrame(kernels[sheet])
+                            training_sentiment = sheetDF[sheetDF.columns[0]].values.tolist()
 
-                            master_kernel = df.values.tolist()
+                            master_kernel = sheetDF.values.tolist()
 
                             print '\n----------   Calculate kernel ' + kernel_type + '   ----------'
                             print 'Read kernel from ' + kernel_type + '.xlsx'
@@ -276,12 +276,12 @@ class Main:
                 for selected_kernel in sub_command.split(","):
                     if selected_kernel is '1':
                         linear = calculateTestingKernelLinear(training_features, testing_features)
-                        linear.to_excel('Export/kernel/testing/linear.xlsx', index=False)
+                        linear.to_excel('Export/kernel/testing/linear.xlsx', sheet_name=str('linear'), index=False)
                         print '\nExported to Export/kernel/testing/linear.xlsx\n'
 
                     elif selected_kernel is '2':
                         polynomial = calculateTestingKernelPolynomial(training_features, testing_features)
-                        polynomial.to_excel('Export/kernel/testing/polynomial.xlsx', index=False)
+                        polynomial.to_excel('Export/kernel/testing/polynomial.xlsx', sheet_name=str('polynomial'), index=False)
                         print '\nExported to Export/kernel/testing/polynomial.xlsx\n'
 
                     elif selected_kernel is '3':
@@ -328,51 +328,80 @@ class Main:
 
                 sub_command = raw_input("Enter command: ") 
 
-                if sub_command is '1':
-                    print '----------   Load Training Model Kernel Linear   ----------'
-                    print 'Read model training from Export/model/linear.xlsx\n'
-                    model = pd.read_excel('Export/model/linear.xlsx').values.tolist()
-                    kernel_type = 'linear'
+                for selected_kernel in sub_command.split(","):
+                    if selected_kernel is '1':
+                        print '----------   Load Training Model Kernel Linear   ----------'
+                        print 'Read model training from Export/model/linear.xlsx'
+                        model = pd.read_excel('Export/model/linear.xlsx').values.tolist()
+                        kernel_type = 'linear'
 
-                elif sub_command is '2':
-                    print '----------   Load Training Model Kernel Polynomial   ----------'
-                    print 'Read model training from Export/model/polynomial.xlsx\n'
-                    model = pd.read_excel('Export/model/polynomial.xlsx').values.tolist()
-                    kernel_type = 'polynomial'
+                    elif selected_kernel is '2':
+                        print '----------   Load Training Model Kernel Polynomial   ----------'
+                        print 'Read model training from Export/model/polynomial.xlsx'
+                        model = pd.read_excel('Export/model/polynomial.xlsx').values.tolist()
+                        kernel_type = 'polynomial'
 
-                elif sub_command is '3':
-                    print '----------   Load Training Model Kernel RBF   ----------'
-                    print 'Read model training from Export/model/rbf.xlsx\n'
-                    model = pd.read_excel('Export/model/rbf.xlsx').values.tolist()
-                    kernel_type = 'rbf'
+                    elif selected_kernel is '3':
+                        print '----------   Load Training Model Kernel RBF   ----------'
+                        print 'Read model training from Export/model/rbf.xlsx'
+                        model = pd.read_excel('Export/model/rbf.xlsx').values.tolist()
+                        kernel_type = 'rbf'
 
-                elif sub_command is '4':
-                    print '----------   Load Training Model Kernel Sigmoid   ----------'
-                    print 'Read model training from Export/model/sigmoid.xlsx\n'
-                    model = pd.read_excel('Export/model/sigmoid.xlsx').values.tolist()
-                    kernel_type = 'sigmoid'
+                    elif selected_kernel is '4':
+                        print '----------   Load Training Model Kernel Sigmoid   ----------'
+                        print 'Read model training from Export/model/sigmoid.xlsx'
+                        model = pd.read_excel('Export/model/sigmoid.xlsx').values.tolist()
+                        kernel_type = 'sigmoid'
+                    
+                    else:
+                        print 'Back to main menu'
+                        break
+
+                    training_model = []
+                    index_c = 1
+                    while index_c < len(model)-1:
+                        sub_model = []
+                        for index_oaa in range(3):
+                            index = index_c+index_oaa
+                            sub_model.append(SVM(clas=model[index][2], C=model[index][3], tol=model[index][4], gamma=model[index][5], a=model[index][6], r=model[index][7], label=model[0][9:], alpha=model[index][9:], bias=model[index][8]))
+                        training_model.append(sub_model)
+                        index_c += 3
+
+                    print 'Read testing kernel from Export/kernel/testing/'+kernel_type+'.xlsx\n'
+                    if kernel_type == 'linear':
+                        master_testing_kernel = pd.read_excel('Export/kernel/testing/linear.xlsx', sheet_name='linear').values.tolist()
+                    elif kernel_type == 'polynomial':
+                        master_testing_kernel = pd.read_excel('Export/kernel/testing/polynomial.xlsx', sheet_name='polynomial').values.tolist()
+                    elif kernel_type == 'rbf':
+                        master_testing_kernel = pd.read_excel('Export/kernel/testing/rbf.xlsx', sheet_name=None)
+                    elif kernel_type == 'sigmoid':
+                        master_testing_kernel = pd.read_excel('Export/kernel/testing/sigmoid.xlsx', sheet_name=None)
+
+                    result_training_model = []
+                    for index_model_set, model_set in enumerate(training_model):
+
+                        sys.stdout.write('\r')
+                        sys.stdout.write("Calculating %d%%" % (float((index_model_set+1))/float(len(training_model))*100))
+                        sys.stdout.flush()
+
+                        if kernel_type == 'rbf':
+                            testing_kernel = master_testing_kernel[model_set[0].getGamma()].values
+                        elif kernel_type == 'sigmoid':
+                            testing_kernel = master_testing_kernel[model_set[0].getA()+';'+model_set[0].getR()].values
+                        else:
+                            testing_kernel = master_testing_kernel
+
+                        result_training_model.append(svmClassification(training_model=model_set, testing_kernel=testing_kernel, kernel_type=kernel_type))
+                    
+                    timeObj = time.localtime(time.time())
+                    timestamp = '%d-%d-%d %d:%d:%d' % (timeObj.tm_mday, timeObj.tm_mon, timeObj.tm_year, timeObj.tm_hour, timeObj.tm_min, timeObj.tm_sec)
+
+                    print('\n----------   Exporting Data   ----------')
+                    convertResultToDataFrame(result_training_model).to_excel('Result/'+kernel_type+' '+timestamp+'.xlsx', index=False) 
+                    print('Exported to Result/'+kernel_type+' '+timestamp+'.xlsx\n')
+
+                    os.system('say "classification '+kernel_type+' has finished"')  
                 
-                else:
-                    print 'Back to main menu'
-                    break
-
-                training_model = []
-                index_c = 1
-                while index_c < len(model)-1:
-                    sub_model = []
-                    for index_oaa in range(3):
-                        index = index_c+index_oaa
-                        sub_model.append(SVM(clas=model[index][2], C=model[index][3], tol=model[index][4], gamma=model[index][5], a=model[index][6], r=model[index][7], label=model[0][9:], alpha=model[index][9:], bias=model[index][8]))
-                    training_model.append(sub_model)
-                    index_c += 3
-
-                print training_model 
-
-                print '----------   Classification Model '+ kernel_type +'   ----------'
-                print '%10s' % 'C','\t',"Tol",'\t',"Pos",'\t',"Net",'\t',"Neg",'\t',"True",'\t',"False",'\t',"Accuracy"
-                for model_set in training_model:
-                    svmClassification(training_model=model_set, kernel_type=kernel_type)
-                print ''
 
     print 'Program terminated'
 

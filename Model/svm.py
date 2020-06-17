@@ -57,9 +57,9 @@ class SVM:
         print 'Class    : ', self.clas
         print 'C        : ', self.C
         print 'Tol      : ', self.tol
-        # print 'Labels   : ', self.label
-        # print 'Aplhas   : ', self.alpha
-        # print 'Bias     : ', self.bias
+        print 'Labels   : ', self.label
+        print 'Aplhas   : ', self.alpha
+        print 'Bias     : ', self.bias
 
     
 

@@ -112,6 +112,30 @@ def convertTrainingModelToDataFrame(training_model, sentimentTraining):
 
     return df
 
+def convertResultToDataFrame(result_training_model):
+    data = OrderedDict()
+    data.update({ 'kernel': [] })
+    data.update({ 'C': [] })
+    data.update({ 'tol': [] })
+    data.update({ 'gamma': [] })
+    data.update({ 'a': [] })
+    data.update({ 'r': [] })
+    data.update({ 'accuracy': [] })
+
+    for result in result_training_model:
+        data['kernel'].append(result.getKernel())
+        data['C'].append(result.getC())
+        data['tol'].append(result.getTol())
+        data['gamma'].append(result.getGamma())
+        data['a'].append(result.getA())
+        data['r'].append(result.getR())
+        data['accuracy'].append(result.getAccuracy())
+
+    df = pd.DataFrame(data, columns=data.keys())
+
+    return df
+    
+
 def printList(data):
     for row in data:
         print row
