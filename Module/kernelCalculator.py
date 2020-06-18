@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import sys
+from Export.parameter import *
 
 def calculateKernelLinear(data):
     print '----------   Calculate kernel linear   ----------'
@@ -16,7 +17,7 @@ def calculateKernelLinear(data):
             kernel[n].append(sub)
 
         sys.stdout.write('\r')
-        sys.stdout.write("Calculating %d%%" % (float((n+1))/float(len(data))*100))
+        sys.stdout.write('Kernel %s -> Calculating %d%%' % (str(1)+' from '+str(1),float((n+1))/float(len(data))*100))
         sys.stdout.flush()
 
     return pd.DataFrame(kernel)
@@ -38,12 +39,12 @@ def calculateKernelPolynomial(data):
             kernel[n].append(sub)
 
         sys.stdout.write('\r')
-        sys.stdout.write("Calculating %d%%" % (float((n+1))/float(len(data))*100))
+        sys.stdout.write('Kernel %s -> Calculating %d%%' % (str(1)+' from '+str(1),float((n+1))/float(len(data))*100))
         sys.stdout.flush()
 
     return pd.DataFrame(kernel)
 
-def calculateKernelRbf(data, gamma):
+def calculateKernelRbf(data, index_gamma, gamma):
     data = data.values
     kernel = []
     for n, tweet in enumerate(data):                      # row
@@ -58,14 +59,15 @@ def calculateKernelRbf(data, gamma):
             kernel[n].append(sub)
 
         sys.stdout.write('\r')
-        sys.stdout.write("Gamma " + str(gamma) + "\t-> Calculating %d%%" % (float((n+1))/float(len(data))*100))
+        sys.stdout.write('Kernel %s -> Calculating %d%%' % (str(index_gamma+1)+' from '+str(len(gammas)),float((n+1))/float(len(data))*100))
         sys.stdout.flush()
+    sys.stdout.flush()
 
     print ''
 
     return pd.DataFrame(kernel)
 
-def calculateKernelSigmoid(data, a, r):
+def calculateKernelSigmoid(data, index_a, index_r, a, r):
     data = data.values
     kernel = []
     for n, tweet in enumerate(data):                      # row
@@ -80,7 +82,7 @@ def calculateKernelSigmoid(data, a, r):
             kernel[n].append(sub)
 
         sys.stdout.write('\r')
-        sys.stdout.write("a " + str(a) + "\tr " + str(r) + "\t-> Calculating %d%%" % (float((n+1))/float(len(data))*100))
+        sys.stdout.write('Kernel %s -> Calculating %d%%' % (str((len(aa)*index_r)+(index_a+1))+' from '+str(len(aa)*len(rr)),float((n+1))/float(len(data))*100))
         sys.stdout.flush()
 
     print ''
@@ -104,7 +106,7 @@ def calculateTestingKernelLinear(training_data, testing_data):
             kernel[u].append(sub)
 
         sys.stdout.write('\r')
-        sys.stdout.write("Calculating %d%%" % (float((u+1))/float(len(testing_data))*100))
+        sys.stdout.write('Kernel %s -> Calculating %d%%' % (str(1)+' from '+str(1),float((u+1))/float(len(testing_data))*100))
         sys.stdout.flush()
 
     return pd.DataFrame(kernel)
@@ -128,12 +130,12 @@ def calculateTestingKernelPolynomial(training_data, testing_data):
             kernel[u].append(sub)
 
         sys.stdout.write('\r')
-        sys.stdout.write("Calculating %d%%" % (float((u+1))/float(len(testing_data))*100))
+        sys.stdout.write('Kernel %s -> Calculating %d%%' % (str(1)+' from '+str(1),float((u+1))/float(len(testing_data))*100))
         sys.stdout.flush()
 
     return pd.DataFrame(kernel)
 
-def calculateTestingKernelRbf(training_data, testing_data, gamma):
+def calculateTestingKernelRbf(training_data, testing_data, index_gamma, gamma):
     training_data = training_data.values
     testing_data = testing_data.values
 
@@ -150,14 +152,14 @@ def calculateTestingKernelRbf(training_data, testing_data, gamma):
             kernel[u].append(sub)
 
         sys.stdout.write('\r')
-        sys.stdout.write("Gamma " + str(gamma) + "\t-> Calculating %d%%" % (float((u+1))/float(len(testing_data))*100))
+        sys.stdout.write('Kernel %s -> Calculating %d%%' % (str(index_gamma+1)+' from '+str(len(gammas)),float((u+1))/float(len(testing_data))*100))
         sys.stdout.flush()
     
     print ''
 
     return pd.DataFrame(kernel)
 
-def calculateTestingKernelSigmoid(training_data, testing_data, a, r):
+def calculateTestingKernelSigmoid(training_data, testing_data, index_a, a, index_r, r):
     training_data = training_data.values
     testing_data = testing_data.values
 
@@ -174,7 +176,7 @@ def calculateTestingKernelSigmoid(training_data, testing_data, a, r):
             kernel[u].append(sub)
 
         sys.stdout.write('\r')
-        sys.stdout.write("a " + str(a) + "\tr " + str(r) + "\t-> Calculating %d%%" % (float((u+1))/float(len(testing_data))*100))
+        sys.stdout.write('Kernel %s -> Calculating %d%%' % (str((len(aa)*index_r)+(index_a+1))+' from '+str(len(aa)*len(rr)),float((u+1))/float(len(testing_data))*100))
         sys.stdout.flush()
     
     print ''

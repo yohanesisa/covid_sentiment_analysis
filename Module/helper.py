@@ -35,8 +35,8 @@ def convertFeaturesToDataFrame(training):
         data.update({ sentScore: [] })
     for tag in initData.getPosTag():
         data.update({ tag+'-PosTag': [] })
-    # for word in initData.getTfidf():
-    #     data.update({ word+'-TFIDF': [] })
+    for word in initData.getTfidf():
+        data.update({ word+'-TFIDF': [] })
     
     # Fill cell with data training
     for item in training:
@@ -51,8 +51,8 @@ def convertFeaturesToDataFrame(training):
         for tag in initData.getPosTag():
             data[tag+'-PosTag'].append(item.getPosTag()[tag])
 
-        # for word in initData.getTfidf():
-        #     data[word+'-TFIDF'].append(item.getTfidf()[word])
+        for word in initData.getTfidf():
+            data[word+'-TFIDF'].append(item.getTfidf()[word])
 
     df = pd.DataFrame(data, columns=data.keys())
     
@@ -120,7 +120,18 @@ def convertResultToDataFrame(result_training_model):
     data.update({ 'gamma': [] })
     data.update({ 'a': [] })
     data.update({ 'r': [] })
+
+    data.update({ 'pos_true': [] })
+    data.update({ 'pos_pred': [] })
+    data.update({ 'net_true': [] })
+    data.update({ 'net_pred': [] })
+    data.update({ 'neg_true': [] })
+    data.update({ 'neg_pred': [] })
+
     data.update({ 'accuracy': [] })
+    data.update({ 'precision': [] })
+    data.update({ 'recall': [] })
+    data.update({ 'f_score': [] })
 
     for result in result_training_model:
         data['kernel'].append(result.getKernel())
@@ -129,7 +140,18 @@ def convertResultToDataFrame(result_training_model):
         data['gamma'].append(result.getGamma())
         data['a'].append(result.getA())
         data['r'].append(result.getR())
-        data['accuracy'].append(result.getAccuracy())
+
+        data['pos_true'].append(result.getPosTrue())
+        data['pos_pred'].append(result.getPosPred())
+        data['net_true'].append(result.getNetTrue())
+        data['net_pred'].append(result.getNetPred())
+        data['neg_true'].append(result.getNegTrue())
+        data['neg_pred'].append(result.getNegPred())
+
+        data['accuracy'].append(result.getAccuracyScore())
+        data['precision'].append(result.getPrecisionScore())
+        data['recall'].append(result.getRecallScore())
+        data['f_score'].append(result.getFScore())
 
     df = pd.DataFrame(data, columns=data.keys())
 

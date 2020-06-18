@@ -33,21 +33,21 @@ def featureExtraction(data, type='Training', training_dict_file=None):
         # Sentimen score feature extraction
         item.setSentScore(sentimentScore(posTag[1]))
 
-    # # Stemming data before unigram TFIDF
-    # for index, item in enumerate(data):
-    #     sys.stdout.write('\r')
-    #     sys.stdout.write("Progress %d%%" % (float((index+1))/float(len(data))*100))
-    #     sys.stdout.flush()
+    # Stemming data before unigram TFIDF
+    for index, item in enumerate(data):
+        sys.stdout.write('\r')
+        sys.stdout.write("Progress %d%%" % (float((index+1))/float(len(data))*100))
+        sys.stdout.flush()
 
-    #     stemmed_word = []
-    #     for word in item.getTokens():
-    #         stemmed_word.append(stemmer.stem(word.encode('utf-8')))
+        stemmed_word = []
+        for word in item.getTokens():
+            stemmed_word.append(stemmer.stem(word.encode('utf-8')))
 
-    #     item.setTokens(stemmed_word)
+        item.setTokens(stemmed_word)
 
-    # initWordDict(data, type, training_dict_file)
-    # for item in data:
-    #     item.setTfidf(countTFIDF(item.getTokens()))
+    initWordDict(data, type, training_dict_file)
+    for item in data:
+        item.setTfidf(countTFIDF(item.getTokens()))
 
     if type == 'Training':
         print '\n\nTotal tweet  : %d' % len(data)
@@ -62,9 +62,9 @@ def featureExtraction(data, type='Training', training_dict_file=None):
         for punctuation in punctuation_dict:
             training_dict['key'].append('Pun-'+punctuation)
             training_dict['value'].append(punctuation_dict[punctuation])
-        # for word in word_dict:
-        #     training_dict['key'].append('Idf-'+word)
-        #     training_dict['value'].append(word_dict[word]['idf'])
+        for word in word_dict:
+            training_dict['key'].append('Idf-'+word)
+            training_dict['value'].append(word_dict[word]['idf'])
         
         pd.DataFrame(training_dict, columns=training_dict.keys()).to_excel('Export/features/dict.xlsx', index=False)
         print 'Exported to Export/features/dict.xlsx\n'

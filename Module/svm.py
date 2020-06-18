@@ -18,9 +18,9 @@ def svm(pov, K, C, tol, max_passes):
     E = [0.0] * len(K)
     while passes < max_passes:
 
-        sys.stdout.write('\r')
-        sys.stdout.write("POV %2d -> C: %10s Tol: %5s -> Pass %s: Calculating..." % (pov, str(C), str(tol), passes+1))
-        sys.stdout.flush()
+        # sys.stdout.write('\r')
+        # sys.stdout.write("POV %2d -> C: %10s Tol: %5s -> Pass %s: Calculating..." % (pov, str(C), str(tol), passes+1))
+        # sys.stdout.flush()
 
         num_changed_alphas = 0
         for i in range(len(K)):
@@ -78,7 +78,7 @@ def svm(pov, K, C, tol, max_passes):
         else:
             passes = 0
     
-    print '\n'
+    # print '\n'
 
     return a, b
 

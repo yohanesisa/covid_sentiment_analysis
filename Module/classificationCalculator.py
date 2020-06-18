@@ -1,11 +1,14 @@
 import copy
 import pandas as pd
 from Model.result import Result
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
 
 def svmClassification(training_model, testing_kernel, kernel_type):
-    result = { 1: 0, 0: 0, -1: 0 }
-    true_classification = 0
-    false_classification = 0
+    y_true = []
+    y_pred = []
 
     for testing_index, K in enumerate(testing_kernel):
         result_OAA = { 1: 0.0, 0: 0.0, -1: 0.0 }
@@ -27,12 +30,20 @@ def svmClassification(training_model, testing_kernel, kernel_type):
 
             result_OAA[pov] += float(b)
 
-        if(int(K[0]) == max(result_OAA, key=result_OAA.get)):
-            result[K[0]] += 1
-            true_classification += 1
-        else:
-            false_classification += 1
+        y_true.append(int(K[0]))
+        y_pred.append(max(result_OAA, key=result_OAA.get))
 
-    accuracy = (float(true_classification)/float(len(testing_kernel))*100)
+    pos_true = y_true.count(1)
+    net_true = y_true.count(0)
+    neg_true = y_true.count(-1)
 
-    return Result(kernel=kernel_type, C=training_model[0].getC(), tol=training_model[0].getTol(), gamma=training_model[0].getGamma(), a=training_model[0].getA(), r=training_model[0].getR(), accuracy=accuracy)
+    pos_pred = y_pred.count(1)
+    net_pred = y_pred.count(0)
+    neg_pred = y_pred.count(-1)
+
+    accuracy = accuracy_score(y_true, y_pred)
+    precission = precision_score(y_true, y_pred, average='weighted')
+    recall = recall_score(y_true, y_pred, average='weighted')
+    f = f1_score(y_true, y_pred, average='weighted')
+
+    return Result(kernel=kernel_type, C=training_model[0].getC(), tol=training_model[0].getTol(), gamma=training_model[0].getGamma(), a=training_model[0].getA(), r=training_model[0].getR(), pos_true=pos_true, pos_pred=pos_pred, net_true=net_true, net_pred=net_pred, neg_true=neg_true, neg_pred=neg_pred, accuracy_score=accuracy, precision_score=precission, recall_score=recall, f_score=f)

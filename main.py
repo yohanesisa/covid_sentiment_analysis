@@ -10,9 +10,9 @@ from Model.tweet import Tweet
 from Model.svm import SVM
 from Module.twitter import *
 from Module.helper import *
-# from Module.preprocessing import *
+from Module.preprocessing import *
 # from Module.featureExtraction import *
-from Module.kernelCalculator import *
+# from Module.kernelCalculator import *
 from Module.svm import *
 from Module.classificationCalculator import *
 from Export.parameter import *
@@ -120,8 +120,8 @@ class Main:
 
                         writer = pd.ExcelWriter('Export/kernel/training/rbf.xlsx')
 
-                        for gamma in gammas:
-                            rbf = calculateKernelRbf(training_features, gamma=float(gamma))
+                        for index_gamma, gamma in enumerate(gammas):
+                            rbf = calculateKernelRbf(training_features, index_gamma=index_gamma, gamma=float(gamma))
                             rbf.to_excel(writer, sheet_name=str(gamma), index=False)
 
                         writer.save()
@@ -135,13 +135,15 @@ class Main:
 
                         writer = pd.ExcelWriter('Export/kernel/training/sigmoid.xlsx')
 
-                        for r in rr:
-                            for a in aa:
-                                sigmoid = calculateKernelSigmoid(training_features, a=float(a), r=float(r))
+                        for index_r, r in enumerate(rr):
+                            for index_a, a in enumerate(aa):
+                                sigmoid = calculateKernelSigmoid(training_features, index_a=index_a, index_r=index_r, a=float(a), r=float(r))
                                 sigmoid.to_excel(writer, sheet_name=str(a)+';'+str(r), index=False)
 
                         writer.save()
                         print '\nExported to Export/kernel/training/sigmoid.xlsx\n'
+
+                os.system('say "training kernel generated"')  
 
         elif command is '3':
             sub_command = ''
@@ -160,15 +162,19 @@ class Main:
                 for selected_kernel in sub_command.split(","):
                     if selected_kernel is '1':
                         TRAINING_KERNEL_FILE = { 'linear':'Export/kernel/training/linear.xlsx' }
+                        total_model = total_model_linear
 
                     elif selected_kernel is '2':
                         TRAINING_KERNEL_FILE = { 'polynomial':'Export/kernel/training/polynomial.xlsx' }
+                        total_model = total_model_polynomial
 
                     elif selected_kernel is '3':
                         TRAINING_KERNEL_FILE = { 'rbf':'Export/kernel/training/rbf.xlsx' }
+                        total_model = total_model_rbf
 
                     elif selected_kernel is '4':
                         TRAINING_KERNEL_FILE = { 'sigmoid':'Export/kernel/training/sigmoid.xlsx' }
+                        total_model = total_model_sigmoid
 
                     else:
                         print 'Back to main menu'
@@ -181,6 +187,8 @@ class Main:
                         training_model = { kernel_type: [] }
 
                         kernels = pd.read_excel(TRAINING_KERNEL_FILE[kernel_type], sheet_name=None)
+
+                        counter_model = 0
 
                         for sheet in kernels:
                             sheetDF = pd.DataFrame(kernels[sheet])
@@ -204,12 +212,6 @@ class Main:
 
                             for tol in tols:
                                 for c in Cs:
-                                    # print 'Param SVM -> C=', c,'\ttol=', tol, '\tmax_passes=', max_passes
-
-                                    # sys.stdout.write('\r')
-                                    # sys.stdout.write('Param SVM -> C='+ str(c) +'\ttol='+ str(tol) +'\tmax_passes='+ str(max_passes))
-                                    # sys.stdout.flush()
-
                                     for pov in OAA:
                                         kernel = copy.deepcopy(master_kernel)
                                         for item in kernel:
@@ -218,8 +220,14 @@ class Main:
                                             else:
                                                 item[0] = -1
 
+                                        sys.stdout.write('\r')
+                                        sys.stdout.write('Model %s -> Calculating...' % (str(counter_model+1)+' from '+str(total_model)))
+                                        sys.stdout.flush()
+
                                         # Search SMO
                                         result = svm(pov=pov, K=kernel, C=c, tol=tol, max_passes=max_passes)
+
+                                        counter_model += 1
 
                                         if kernel_type == 'rbf':
                                             training_model[kernel_type].append(SVM(clas=pov, C=c, tol=tol, gamma=sheet, a='-', r='-', label=training_sentiment, alpha=result[0], bias=result[1]))
@@ -228,7 +236,7 @@ class Main:
                                         else:
                                             training_model[kernel_type].append(SVM(clas=pov, C=c, tol=tol, gamma='-', a='-', r='-', label=training_sentiment, alpha=result[0], bias=result[1]))
 
-                        print('----------   Exporting Data   ----------')
+                        print('\n----------   Exporting Data   ----------')
                         convertTrainingModelToDataFrame(training_model, training_sentiment).to_excel('Export/model/'+ kernel_type +'.xlsx', index=False)
                         print('Exported to Export/model/'+ kernel_type +'.xlsx\n')
 
@@ -291,8 +299,8 @@ class Main:
 
                         writer = pd.ExcelWriter('Export/kernel/testing/rbf.xlsx')
 
-                        for gamma in gammas:
-                            rbf = calculateTestingKernelRbf(training_features, testing_features, gamma=float(gamma))
+                        for index_gamma, gamma in enumerate(gammas):
+                            rbf = calculateTestingKernelRbf(training_features, testing_features, index_gamma=index_gamma, gamma=float(gamma))
                             rbf.to_excel(writer, sheet_name=str(gamma), index=False)
 
                         writer.save()
@@ -306,13 +314,15 @@ class Main:
 
                         writer = pd.ExcelWriter('Export/kernel/testing/sigmoid.xlsx')
 
-                        for r in rr:
-                            for a in aa:
-                                sigmoid = calculateTestingKernelSigmoid(training_features, testing_features, a=float(a), r=float(r))
+                        for index_r, r in enumerate(rr):
+                            for index_a, a in enumerate(aa):
+                                sigmoid = calculateTestingKernelSigmoid(training_features, testing_features, index_a=index_a, index_r=index_r, a=float(a), r=float(r))
                                 sigmoid.to_excel(writer, sheet_name=str(a)+';'+str(r), index=False)
 
                         writer.save()
                         print '\nExported to Export/kernel/testing/sigmoid.xlsx\n'
+
+                os.system('say "testing kernel generated"')  
 
         elif command is '8':
             sub_command = ''
@@ -326,7 +336,10 @@ class Main:
                 print '    4 - Sigmoid'
                 print '    X - Back to main menu'
 
-                sub_command = raw_input("Enter command: ") 
+                sub_command = raw_input("Enter command: ")
+
+                timeObj = time.localtime(time.time())
+                timestamp = '%d-%d-%d %d:%d:%d' % (timeObj.tm_mday, timeObj.tm_mon, timeObj.tm_year, timeObj.tm_hour, timeObj.tm_min, timeObj.tm_sec)
 
                 for selected_kernel in sub_command.split(","):
                     if selected_kernel is '1':
@@ -356,7 +369,7 @@ class Main:
                     else:
                         print 'Back to main menu'
                         break
-
+                    
                     training_model = []
                     index_c = 1
                     while index_c < len(model)-1:
@@ -380,9 +393,9 @@ class Main:
                     result_training_model = []
                     for index_model_set, model_set in enumerate(training_model):
 
-                        sys.stdout.write('\r')
-                        sys.stdout.write("Calculating %d%%" % (float((index_model_set+1))/float(len(training_model))*100))
-                        sys.stdout.flush()
+                        # sys.stdout.write('\r')
+                        # sys.stdout.write("Calculating %d%%" % (float((index_model_set+1))/float(len(training_model))*100))
+                        # sys.stdout.flush()
 
                         if kernel_type == 'rbf':
                             testing_kernel = master_testing_kernel[model_set[0].getGamma()].values
@@ -393,15 +406,21 @@ class Main:
 
                         result_training_model.append(svmClassification(training_model=model_set, testing_kernel=testing_kernel, kernel_type=kernel_type))
                     
-                    timeObj = time.localtime(time.time())
-                    timestamp = '%d-%d-%d %d:%d:%d' % (timeObj.tm_mday, timeObj.tm_mon, timeObj.tm_year, timeObj.tm_hour, timeObj.tm_min, timeObj.tm_sec)
-
-                    print('\n----------   Exporting Data   ----------')
-                    convertResultToDataFrame(result_training_model).to_excel('Result/'+kernel_type+' '+timestamp+'.xlsx', index=False) 
-                    print('Exported to Result/'+kernel_type+' '+timestamp+'.xlsx\n')
+                    print('----------   Exporting Data   ----------')
+                    convertResultToDataFrame(result_training_model).to_excel('Export/result/'+timestamp+' '+kernel_type+'.xlsx', index=False) 
+                    print('Exported to Export/result/'+timestamp+' '+kernel_type+'.xlsx\n')
 
                     os.system('say "classification '+kernel_type+' has finished"')  
                 
+        elif command is 'p':
+            print 'C          : ', len(Cs), ' ', str(Cs)
+            print 'tols       : ', len(tols), ' ', str(tols)
+            print 'max_passes : ', str(max_passes)
+            print ''
+            print 'gamma      : ', len(gammas), ' ', str(gammas)
+            print ''
+            print 'a          : ', len(aa), ' ', str(aa)
+            print 'r          : ', len(rr), ' ', str(rr)
 
     print 'Program terminated'
 
