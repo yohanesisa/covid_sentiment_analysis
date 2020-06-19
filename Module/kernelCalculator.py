@@ -4,7 +4,6 @@ import sys
 from Export.parameter import *
 
 def calculateKernelLinear(data):
-    print '----------   Calculate kernel linear   ----------'
     data = data.values
     kernel = []
     for n, tweet in enumerate(data):                      # row
@@ -20,13 +19,14 @@ def calculateKernelLinear(data):
         sys.stdout.write('Kernel %s -> Calculating %d%%' % (str(1)+' from '+str(1),float((n+1))/float(len(data))*100))
         sys.stdout.flush()
 
+    print ''
+
     return pd.DataFrame(kernel)
 
 def calculateKernelPolynomial(data):
-    print '----------   Calculate kernel polynomial   ----------'
-
     data = data.values
     kernel = []
+    
     for n, tweet in enumerate(data):                      # row
         kernel.append([data[n][0]])
         for i in range(len(data)):                        # loop over item
@@ -41,12 +41,15 @@ def calculateKernelPolynomial(data):
         sys.stdout.write('\r')
         sys.stdout.write('Kernel %s -> Calculating %d%%' % (str(1)+' from '+str(1),float((n+1))/float(len(data))*100))
         sys.stdout.flush()
+    
+    print ''
 
     return pd.DataFrame(kernel)
 
 def calculateKernelRbf(data, index_gamma, gamma):
     data = data.values
     kernel = []
+    
     for n, tweet in enumerate(data):                      # row
         kernel.append([data[n][0]])
         for i in range(len(data)):                        # loop over item
@@ -61,7 +64,6 @@ def calculateKernelRbf(data, index_gamma, gamma):
         sys.stdout.write('\r')
         sys.stdout.write('Kernel %s -> Calculating %d%%' % (str(index_gamma+1)+' from '+str(len(gammas)),float((n+1))/float(len(data))*100))
         sys.stdout.flush()
-    sys.stdout.flush()
 
     print ''
 
@@ -70,6 +72,7 @@ def calculateKernelRbf(data, index_gamma, gamma):
 def calculateKernelSigmoid(data, index_a, index_r, a, r):
     data = data.values
     kernel = []
+
     for n, tweet in enumerate(data):                      # row
         kernel.append([data[n][0]])
         for i in range(len(data)):                        # loop over item
@@ -90,12 +93,10 @@ def calculateKernelSigmoid(data, index_a, index_r, a, r):
     return pd.DataFrame(kernel)
 
 def calculateTestingKernelLinear(training_data, testing_data):
-    print '----------   Calculate kernel linear   ----------'
-
     training_data = training_data.values
     testing_data = testing_data.values
-
     kernel = []
+
     for u, testing in enumerate(testing_data):
         kernel.append([testing_data[u][0]])
         for t in range(len(training_data)):
@@ -109,15 +110,15 @@ def calculateTestingKernelLinear(training_data, testing_data):
         sys.stdout.write('Kernel %s -> Calculating %d%%' % (str(1)+' from '+str(1),float((u+1))/float(len(testing_data))*100))
         sys.stdout.flush()
 
+    print ''
+
     return pd.DataFrame(kernel)
 
 def calculateTestingKernelPolynomial(training_data, testing_data):
-    print '----------   Calculate kernel polynomial   ----------'
-
     training_data = training_data.values
     testing_data = testing_data.values
-
     kernel = []
+
     for u, testing in enumerate(testing_data):
         kernel.append([testing_data[u][0]])
         for t in range(len(training_data)):
@@ -133,13 +134,15 @@ def calculateTestingKernelPolynomial(training_data, testing_data):
         sys.stdout.write('Kernel %s -> Calculating %d%%' % (str(1)+' from '+str(1),float((u+1))/float(len(testing_data))*100))
         sys.stdout.flush()
 
+    print ''
+
     return pd.DataFrame(kernel)
 
 def calculateTestingKernelRbf(training_data, testing_data, index_gamma, gamma):
     training_data = training_data.values
     testing_data = testing_data.values
-
     kernel = []
+
     for u, testing in enumerate(testing_data):
         kernel.append([testing_data[u][0]])
         for t in range(len(training_data)):
@@ -162,8 +165,8 @@ def calculateTestingKernelRbf(training_data, testing_data, index_gamma, gamma):
 def calculateTestingKernelSigmoid(training_data, testing_data, index_a, a, index_r, r):
     training_data = training_data.values
     testing_data = testing_data.values
-
     kernel = []
+    
     for u, testing in enumerate(testing_data):
         kernel.append([testing_data[u][0]])
         for t in range(len(training_data)):

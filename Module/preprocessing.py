@@ -11,9 +11,6 @@ emoticons = [':)', ':]', '=)', ':-)', ':(', ':[', '=(', ':-(', ':p', ':P', '=P',
              'B-)', '^_^', '-_-', '>:o', '>:O', ':v', ':3', '8|', 'B|', '8-|', 'B-|', '>:(', ':/', ':\\', ':-/', ':-\\', ':\'(', 'O:)', ':*', ':-*', '<3', '(y)', '(Y)']
 escapedEmoticons = [re.escape(x) for x in emoticons]
 
-# punctuations = ['#', '$', '%', '&', '(', ')', '*', '+', ',', '.', '/', ':',
-#                 ';', '<', '=', '>', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~']
-
 punctuations = ['#', '$', '%', '(', ')', '*', '+', ',', '.', '/', ':',
                 ';', '<', '=', '>', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~', '&amp;', '&']
 
@@ -25,16 +22,14 @@ slangwords = {slang: (standard) for slang, standard in slangwords}
 sastrawiFactory = StopWordRemoverFactory()
 stopwords = sastrawiFactory.get_stop_words()
 
-# class Preprocessing():
-
-def tweetPreprocessing(training):
-    print('\n----------   Preprocessing Start   ----------')
-    for index, item in enumerate(training):
+def tweetPreprocessing(tweets, type='Training'):
+    for index, item in enumerate(tweets):
         item.setTokens(preprocessing(item.getSentence()))
         sys.stdout.write('\r')
-        sys.stdout.write("Progress %d%%" % (float((index+1))/float(len(training))*100))
+        sys.stdout.write(type+" preprocessing progress %d%%" % (float((index+1))/float(len(tweets))*100))
         sys.stdout.flush()
-    print('\n')
+
+    print ''
 
 def preprocessing(tweet):
     clean = caseFolding(tweet)

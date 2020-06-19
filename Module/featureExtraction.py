@@ -18,7 +18,6 @@ punctuation_dict = {'exclamation': 0, 'question': 0, 'quotation': 0}
 word_dict = {}
 
 def featureExtraction(data, type='Training', training_dict_file=None):
-    print '----------   ' + type + ' Feature Extraction Start   ----------'
     preparation(data, type, training_dict_file)
     
     for item in data:
@@ -36,7 +35,7 @@ def featureExtraction(data, type='Training', training_dict_file=None):
     # Stemming data before unigram TFIDF
     for index, item in enumerate(data):
         sys.stdout.write('\r')
-        sys.stdout.write("Progress %d%%" % (float((index+1))/float(len(data))*100))
+        sys.stdout.write(type + " feature extraction progress %d%%" % (float((index+1))/float(len(data))*100))
         sys.stdout.flush()
 
         stemmed_word = []
@@ -45,16 +44,18 @@ def featureExtraction(data, type='Training', training_dict_file=None):
 
         item.setTokens(stemmed_word)
 
+    print ''
+
     initWordDict(data, type, training_dict_file)
     for item in data:
         item.setTfidf(countTFIDF(item.getTokens()))
 
     if type == 'Training':
-        print '\n\nTotal tweet  : %d' % len(data)
-        print 'Positive : %d' % countSent(data, 1)
-        print 'Neutral  : %d' % countSent(data, 0)
-        print 'Negative : %d' % countSent(data, -1) 
-        print 'Word     : %d \n' % len(word_dict)
+        # print '\n\nTotal tweet  : %d' % len(data)
+        # print 'Positive : %d' % countSent(data, 1)
+        # print 'Neutral  : %d' % countSent(data, 0)
+        # print 'Negative : %d' % countSent(data, -1) 
+        # print 'Word     : %d \n' % len(word_dict)
 
         training_dict = OrderedDict()       # Saving punctuation dict and word dict for testing feature extraction later
         training_dict.update({ 'key': [] })
@@ -67,9 +68,7 @@ def featureExtraction(data, type='Training', training_dict_file=None):
             training_dict['value'].append(word_dict[word]['idf'])
         
         pd.DataFrame(training_dict, columns=training_dict.keys()).to_excel('Export/features/dict.xlsx', index=False)
-        print 'Exported to Export/features/dict.xlsx\n'
-    else:
-        print '\n\nTotal tweet  : %d' % len(data)
+        print 'Exported to Export/features/dict.xlsx'
 
 
 def initWordDict(data, type='Training', training_dict_file=None):
@@ -229,7 +228,7 @@ def removePunctuation(tweet):
 
 
 def preparation(data, type='Training', training_dict_file=None):
-    print('----------   Preparing Feature Extraction    ----------')
+    # print('----------   Preparing Feature Extraction    ----------')
 
     global punctuation_dict
 
@@ -253,10 +252,10 @@ def preparation(data, type='Training', training_dict_file=None):
         punctuation_dict['question'] = int(training_punc_dict.loc[training_punc_dict['key'] == 'Pun-question'].values[0][1])
         punctuation_dict['quotation'] = int(training_punc_dict.loc[training_punc_dict['key'] == 'Pun-quotation'].values[0][1])
 
-    print('Punctuation Dict')
-    print('     Exclamation : %d' % punctuation_dict['exclamation'])
-    print('     Question    : %d' % punctuation_dict['question'])
-    print('     Quotation   : %d' % punctuation_dict['quotation'])
+    # print('Punctuation Dict')
+    # print('     Exclamation : %d' % punctuation_dict['exclamation'])
+    # print('     Question    : %d' % punctuation_dict['question'])
+    # print('     Quotation   : %d' % punctuation_dict['quotation'])
 
 
 def average(x, y):

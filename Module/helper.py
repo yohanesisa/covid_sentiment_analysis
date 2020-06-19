@@ -23,6 +23,21 @@ def convertRawToDataFrame(raw):
 
     return df
 
+def convertTweetsToDataFrame(tweets):
+    data = OrderedDict()
+    data.update({ 'id': [] })
+    data.update({ 'sentence': [] })
+    data.update({ 'sentiment': [] })
+
+    for tweet in tweets:
+        data['id'].append(tweet.getId())
+        data['sentence'].append(tweet.getSentence())
+        data['sentiment'].append(tweet.getSentiment())
+
+    df = pd.DataFrame(data, columns=data.keys())
+
+    return df
+
 def convertFeaturesToDataFrame(training):
     data = OrderedDict()
     data.update({ 'sentimentLabel': [] })
