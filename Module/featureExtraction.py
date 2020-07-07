@@ -1,24 +1,30 @@
 # from helper import *
+import numpy as np
+import sys
+import pandas as pd
+import nltk
+import copy
+
 from Model.tweet import Tweet
 from Module.helper import *
 from Library.hmmtagger import MainTagger
 from Library.barasa import *
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
-import numpy as np
-import sys
-import pandas as pd
-from collections import OrderedDict
 
-sastrawiFactory = StemmerFactory()
-stemmer = sastrawiFactory.create_stemmer()
+from collections import OrderedDict
+from nltk.util import ngrams
+from nltk.tokenize import word_tokenize
+
 tagger = MainTagger('Module/Library/resource/Lexicon.trn', 'Module/Library/resource/Ngram.trn', 0, 3, 3, 0, 0, False, 0.2, 0, 500.0, 1)
 SentWordNet = read_barasa()
+sastrawiFactory = StemmerFactory()
+stemmer = sastrawiFactory.create_stemmer()
 
 punctuation_dict = {'exclamation': 0, 'question': 0, 'quotation': 0}
 word_dict = {}
 
 def featureExtraction(data, type='Training', training_dict_file=None):
-    preparation(data, type, training_dict_file)
+    initPuncDict(data, type, training_dict_file)
     
     for item in data:
         # Punctuation based feature extraction
@@ -40,6 +46,7 @@ def featureExtraction(data, type='Training', training_dict_file=None):
 
         stemmed_word = []
         for word in item.getTokens():
+            # print word,stemmer.stem(word.encode('utf-8'))
             stemmed_word.append(stemmer.stem(word.encode('utf-8')))
 
         item.setTokens(stemmed_word)
@@ -48,7 +55,13 @@ def featureExtraction(data, type='Training', training_dict_file=None):
 
     initWordDict(data, type, training_dict_file)
     for item in data:
-        item.setTfidf(countTFIDF(item.getTokens()))
+        item.setTfidf(tfidf(item.getTokens()))
+
+    for item in data:
+        item.setBow(bagOfWord(item.getTokens()))
+    
+    for item in data:
+        item.setPolarity(polarityLabel(item.getSentScore()))
 
     if type == 'Training':
         # print '\n\nTotal tweet  : %d' % len(data)
@@ -70,10 +83,139 @@ def featureExtraction(data, type='Training', training_dict_file=None):
         pd.DataFrame(training_dict, columns=training_dict.keys()).to_excel('Export/features/dict.xlsx', index=False)
         print 'Exported to Export/features/dict.xlsx'
 
+def polarityLabel(sentimentScore):
+    tolerance = 0
+    weight = sentimentScore['posSentScore']-sentimentScore['negSentScore']
+    polarity = None
+
+    if weight > tolerance:
+        polarity = 1
+    elif weight < (tolerance*-1):
+        polarity = -1
+    else:
+        polarity = 0
+
+    return polarity
+
+def initPuncDict(data, type='Training', training_dict_file=None):
+    global punctuation_dict
+
+    if type == 'Training':
+        punctuation_dict = {'exclamation': 0, 'question': 0, 'quotation': 0}
+
+        for item in data:
+            for word in item.getTokens():
+                if(word == '!'):
+                    punctuation_dict['exclamation'] += 1
+                if(word == '?'):
+                    punctuation_dict['question'] += 1
+                if(word == '\'' or word == '``'):
+                    punctuation_dict['quotation'] += 1
+    else:
+        punctuation_dict = {'exclamation': 0, 'question': 0, 'quotation': 0}
+
+        training_punc_dict = pd.read_excel(training_dict_file)
+
+        punctuation_dict['exclamation'] = int(training_punc_dict.loc[training_punc_dict['key'] == 'Pun-exclamation'].values[0][1])
+        punctuation_dict['question'] = int(training_punc_dict.loc[training_punc_dict['key'] == 'Pun-question'].values[0][1])
+        punctuation_dict['quotation'] = int(training_punc_dict.loc[training_punc_dict['key'] == 'Pun-quotation'].values[0][1])
+
+def punctuationBased(tweet):
+    puntuationBased = {'exclamation': 0, 'question': 0, 'quotation': 0}
+
+    for word in tweet:
+        if(word == '!'):
+            puntuationBased['exclamation'] += 1
+        if(word == '?'):
+            puntuationBased['question'] += 1
+        if(word == '\'' or word == '``'):
+            puntuationBased['quotation'] += 1
+
+    puntuationBased['exclamation'] = average( float(puntuationBased['exclamation']), float(punctuation_dict['exclamation']))
+    puntuationBased['question'] = average( float(puntuationBased['question']), float(punctuation_dict['question']))
+    puntuationBased['quotation'] = average( float(puntuationBased['quotation']), float(punctuation_dict['quotation']))
+
+    return puntuationBased
+
+def posTagger(tweet):
+    dictionaryTag = {'JJ': 0, 'RB': 0, 'NN': 0, 'NNP': 0, 'NNPP': 0,
+                     'NNG': 0, 'VBI': 0, 'VBT': 0, 'IN': 0, 'MD': 0,
+                     'CC': 0, 'SC': 0, 'DT': 0, 'UH': 0, 'CDO': 0,
+                     'CDC': 0, 'CDP': 0, 'CDI': 0, 'PRP': 0, 'WP': 0,
+                     'PRN': 0, 'PRL': 0, 'NEG': 0, 'SYM': 0, 'RP': 0,
+                     'FW': 0, }
+
+    taged = tagger.taggingStr(' '.join(tweet))
+    cleanTag = {}
+
+    for word in taged:
+        tag = word.split('/')
+        # print str(tag[0].encode('utf-8')) + ' -> ' + str(tag[1].encode('utf-8'))
+        dictionaryTag[tag[1]] += 1
+
+        cleanTag.update({tag[0]: tag[1]})
+
+    return dictionaryTag, cleanTag
+
+def sentimentScore(tweet):
+    for word in tweet:
+        if tweet[word] == 'JJ' or tweet[word] == 'CDC' or tweet[word] == 'CDI' or tweet[word] == 'CDO' or tweet[word] == 'CDP' or tweet[word] == 'IN':
+            tweet[word] = 'a'  # adverb
+        elif tweet[word] == 'VBI' or tweet[word] == 'VBT':
+            tweet[word] = 'v'  # verb
+        elif tweet[word] == 'RB' or tweet[word] == 'NEG' or tweet[word] == 'SC':
+            tweet[word] = 'r'  # additional adverb
+        elif tweet[word] == 'NN' or tweet[word] == 'NNP' or tweet[word] == 'NNG' or tweet[word] == 'FW' or tweet[word] == 'MD' or tweet[word] == 'WP':
+            tweet[word] = 'n'  # noun
+        else:
+            tweet[word] = 'n'
+
+    posScore = 0.0
+    negScore = 0.0
+    for word in tweet:
+        posWord = 0.0
+        negWord = 0.0
+        synsets = SentWordNet[word]
+
+        cleanSynsets = []
+        for sent in synsets:
+            if sent.synset.endswith(tweet[word]):
+                cleanSynsets.append(sent)
+
+        for sent in cleanSynsets:
+            posWord += float(sent.pos)
+            negWord += float(sent.neg)
+
+        totalWordScore = posWord+negWord
+
+        posWord = average(float(posWord),float(totalWordScore))
+        negWord = average(float(negWord),float(totalWordScore))
+
+        # print word + '-(' + tweet[word] + ') \tpos= ' + str(posWord) + '\tneg= ' + str(negWord)
+
+        posScore += float(posWord)
+        negScore += float(negWord)
+
+    # print '---- SUM ---- \tpos= ' + str(posScore) + '\tneg= ' + str(negScore)
+        # for sent in cleanSynsets:
+        #     print '\t' + str(sent)
+    
+    totalTweetScore = posScore+negScore
+    posScore = average(float(posScore),float(totalTweetScore))
+    negScore = average(float(negScore),float(totalTweetScore))
+
+    return { 'posSentScore': posScore, 'negSentScore': negScore}
 
 def initWordDict(data, type='Training', training_dict_file=None):
-    global word_dict
 
+    # Unigram
+    for item in data:
+        item.setSentence(' '.join(item.getTokens()))
+
+        n_grams = ngrams(word_tokenize(item.getSentence()), 1)
+        item.setTokens([' '.join(grams) for grams in n_grams])
+
+    global word_dict
     if type == 'Training':
         word_dict = {}
 
@@ -114,8 +256,7 @@ def initWordDict(data, type='Training', training_dict_file=None):
     # for word in word_dict:
     #     print '%20s' % word, '\t', word_dict[word]['idf']
 
-    
-def countTFIDF(tweet):
+def tfidf(tweet):
     TF_dict = {}
     for word in tweet:          # Calculating word occurence in a document
         if word in TF_dict:
@@ -139,124 +280,20 @@ def countTFIDF(tweet):
 
     return TFIDF_dict
 
+def bagOfWord(tweet):
+    bow = copy.deepcopy(word_dict)
 
-def sentimentScore(tweet):
-    for word in tweet:
-        if tweet[word] == 'JJ' or tweet[word] == 'CDC' or tweet[word] == 'CDI' or tweet[word] == 'CDO' or tweet[word] == 'CDP' or tweet[word] == 'IN':
-            tweet[word] = 'a'  # adverb
-        elif tweet[word] == 'VBI' or tweet[word] == 'VBT':
-            tweet[word] = 'v'  # verb
-        elif tweet[word] == 'RB' or tweet[word] == 'NEG' or tweet[word] == 'SC':
-            tweet[word] = 'r'  # additional adverb
-        elif tweet[word] == 'NN' or tweet[word] == 'NNP' or tweet[word] == 'NNG' or tweet[word] == 'FW' or tweet[word] == 'MD' or tweet[word] == 'WP':
-            tweet[word] = 'n'  # noun
+    for word in bow:
+        if word in tweet:
+            bow[word] = 1
         else:
-            tweet[word] = 'n'
-
-    posScore = 0.0
-    negScore = 0.0
-    for word in tweet:
-        posWord = 0.0
-        negWord = 0.0
-        synsets = SentWordNet[word]
-
-        cleanSynsets = []
-        for sent in synsets:
-            if sent.synset.endswith(tweet[word]):
-                cleanSynsets.append(sent)
-
-        for sent in cleanSynsets:
-            posWord += float(sent.pos)
-            negWord += float(sent.neg)
-
-        posWord = average(float(posWord),float(len(cleanSynsets)))
-        negWord = average(float(negWord),float(len(cleanSynsets)))
-
-        # print word + '-(' + tweet[word] + ') \tpos= ' + str(posWord) + '\tneg= ' + str(negWord)
-
-        posScore += float(posWord)
-        negScore += float(negWord)
-
-    # print '---- SUM ---- \tpos= ' + str(posScore) + '\tneg= ' + str(negScore)
-        # for sent in cleanSynsets:
-        #     print '\t' + str(sent)
-
-    return { 'posSentScore': posScore, 'negSentScore': negScore}
-
-def posTagger(tweet):
-    dictionaryTag = {'JJ': 0, 'RB': 0, 'NN': 0, 'NNP': 0, 'NNPP': 0,
-                     'NNG': 0, 'VBI': 0, 'VBT': 0, 'IN': 0, 'MD': 0,
-                     'CC': 0, 'SC': 0, 'DT': 0, 'UH': 0, 'CDO': 0,
-                     'CDC': 0, 'CDP': 0, 'CDI': 0, 'PRP': 0, 'WP': 0,
-                     'PRN': 0, 'PRL': 0, 'NEG': 0, 'SYM': 0, 'RP': 0,
-                     'FW': 0, }
-
-    taged = tagger.taggingStr(' '.join(tweet))
-    cleanTag = {}
-
-    for word in taged:
-        tag = word.split('/')
-        # print str(tag[0]) + ' -> ' + str(tag[1])
-        dictionaryTag[tag[1]] += 1
-
-        cleanTag.update({tag[0]: tag[1]})
-
-    return dictionaryTag, cleanTag
-
-
-def punctuationBased(tweet):
-    puntuationBased = {'exclamation': 0, 'question': 0, 'quotation': 0}
-
-    for word in tweet:
-        if(word == '!'):
-            puntuationBased['exclamation'] += 1
-        if(word == '?'):
-            puntuationBased['question'] += 1
-        if(word == '\'' or word == '``'):
-            puntuationBased['quotation'] += 1
-
-    puntuationBased['exclamation'] = average( float(puntuationBased['exclamation']), float(punctuation_dict['exclamation']))
-    puntuationBased['question'] = average( float(puntuationBased['question']), float(punctuation_dict['question']))
-    puntuationBased['quotation'] = average( float(puntuationBased['quotation']), float(punctuation_dict['quotation']))
-
-    return puntuationBased
-
+            bow[word] = 0
+    
+    return bow
 
 def removePunctuation(tweet):
-    tweet = list(filter(lambda i: i not in ['!', '?', '\'', '``'], tweet))
+    tweet = list(filter(lambda i: i not in ['!', '?', '\'', '``', '-'], tweet))
     return tweet
-
-
-def preparation(data, type='Training', training_dict_file=None):
-    # print('----------   Preparing Feature Extraction    ----------')
-
-    global punctuation_dict
-
-    if type == 'Training':
-        punctuation_dict = {'exclamation': 0, 'question': 0, 'quotation': 0}
-
-        for item in data:
-            for word in item.getTokens():
-                if(word == '!'):
-                    punctuation_dict['exclamation'] += 1
-                if(word == '?'):
-                    punctuation_dict['question'] += 1
-                if(word == '\'' or word == '``'):
-                    punctuation_dict['quotation'] += 1
-    else:
-        punctuation_dict = {'exclamation': 0, 'question': 0, 'quotation': 0}
-
-        training_punc_dict = pd.read_excel(training_dict_file)
-
-        punctuation_dict['exclamation'] = int(training_punc_dict.loc[training_punc_dict['key'] == 'Pun-exclamation'].values[0][1])
-        punctuation_dict['question'] = int(training_punc_dict.loc[training_punc_dict['key'] == 'Pun-question'].values[0][1])
-        punctuation_dict['quotation'] = int(training_punc_dict.loc[training_punc_dict['key'] == 'Pun-quotation'].values[0][1])
-
-    # print('Punctuation Dict')
-    # print('     Exclamation : %d' % punctuation_dict['exclamation'])
-    # print('     Question    : %d' % punctuation_dict['question'])
-    # print('     Quotation   : %d' % punctuation_dict['quotation'])
-
 
 def average(x, y):
     if y == 0:

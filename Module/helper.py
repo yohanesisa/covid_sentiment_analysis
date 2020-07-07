@@ -1,14 +1,28 @@
 import pandas as pd
 from collections import OrderedDict
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import confusion_matrix
 
-def countSent(training, sentiment):
+feature_punc = True
+feature_sentscore = False
+feature_postag = True
+feature_unigram_tfidf = True
+feature_bow = False
+
+lexicon_labeling = True
+
+def countSent(data, sentiment):
     count = 0
-    for item in training:
+    for item in data:
         if(item.getSentiment() == sentiment):
             count = count + 1
     return count
 
 def convertRawToDataFrame(raw):
+
     data = OrderedDict()
     data.update({ 'id': [] })
     data.update({ 'sentence': [] })
@@ -38,42 +52,81 @@ def convertTweetsToDataFrame(tweets):
 
     return df
 
-def convertFeaturesToDataFrame(training):
+def convertFeaturesToDataFrame(tweets):
     data = OrderedDict()
     data.update({ 'sentimentLabel': [] })
 
+    y_true = []
+    y_pred = []
+
     # Init Data
-    initData = training[0]
-    for punctuation in initData.getPunctuation():
-        data.update({ punctuation+'-Punc': [] })
-    for sentScore in initData.getSentScore():
-        data.update({ sentScore: [] })
-    for tag in initData.getPosTag():
-        data.update({ tag+'-PosTag': [] })
-    for word in initData.getTfidf():
-        data.update({ word+'-TFIDF': [] })
-    
-    # Fill cell with data training
-    for item in training:
-        data['sentimentLabel'].append(item.getSentiment())
-
-        for punctuation in item.getPunctuation():
-            data[punctuation+'-Punc'].append(item.getPunctuation()[punctuation])
-
-        for sentScore in item.getSentScore():
-            data[sentScore].append(item.getSentScore()[sentScore])
-
+    initData = tweets[0]
+    if feature_punc:
+        for punctuation in initData.getPunctuation():
+            data.update({ punctuation+'-Punc': [] })
+    if feature_sentscore:
+        for sentScore in initData.getSentScore():
+            data.update({ sentScore: [] })
+    if feature_postag:
         for tag in initData.getPosTag():
-            data[tag+'-PosTag'].append(item.getPosTag()[tag])
-
+            data.update({ tag+'-PosTag': [] })
+    if feature_unigram_tfidf:
         for word in initData.getTfidf():
-            data[word+'-TFIDF'].append(item.getTfidf()[word])
+            data.update({ word+'-TFIDF': [] })
+    if feature_bow:
+        for word in initData.getBow():
+            data.update({ word+'-BoW': [] })
+            
+    # Fill cell with data training
+    for item in tweets:
+        y_true.append(item.getSentiment())
+        y_pred.append(item.getPolarity())
 
+        if lexicon_labeling:
+            data['sentimentLabel'].append(item.getPolarity())
+            # data['sentimentLabel'].append(item.getSentiment())
+            # data['polarityLabel'].append(item.getPolarity())
+        else:
+            data['sentimentLabel'].append(item.getSentiment())
+
+        if feature_punc:
+            for punctuation in item.getPunctuation():
+                data[punctuation+'-Punc'].append(item.getPunctuation()[punctuation])
+
+        if feature_sentscore:
+            for sentScore in item.getSentScore():
+                data[sentScore].append(item.getSentScore()[sentScore])
+
+        if feature_postag:
+            for tag in initData.getPosTag():
+                data[tag+'-PosTag'].append(item.getPosTag()[tag])
+
+        if feature_unigram_tfidf:
+            for word in initData.getTfidf():
+                data[word+'-TFIDF'].append(item.getTfidf()[word])
+
+        if feature_bow:
+            for word in initData.getBow():
+                data[word+'-BoW'].append(item.getBow()[word])
+
+    if lexicon_labeling:
+        print ''
+        print 'Lexicon Tagging Enabled -> Accuracy',accuracy_score(y_true, y_pred)*100
+
+        # accuracy = accuracy_score(y_true, y_pred)
+        # precission = precision_score(y_true, y_pred, average='weighted')
+        # recall = recall_score(y_true, y_pred, average='weighted')
+        # f = f1_score(y_true, y_pred, average='weighted')
+        # c_matrix = confusion_matrix(y_true, y_pred, labels=[1, 0, -1])
+
+        # print accuracy, precission, recall, f
+        # print c_matrix
+                
     df = pd.DataFrame(data, columns=data.keys())
     
     return df
 
-def convertTrainingModelToDataFrame(training_model, sentimentTraining):
+def convertTrainingModelToDataFrame(model, label):
     data = OrderedDict()
     data.update({ 'kernel': [] })
     data.update({ 'sentiment': [] })
@@ -86,9 +139,9 @@ def convertTrainingModelToDataFrame(training_model, sentimentTraining):
     data.update({ 'bias': [] })
 
     # Init data
-    for kernel in training_model:
-        if training_model[kernel] != []:
-            initData = training_model[kernel]
+    for kernel in model:
+        if model[kernel] != []:
+            initData = model[kernel]
             break
 
     for alpha in range(len(initData[0].getAlpha())):
@@ -104,12 +157,12 @@ def convertTrainingModelToDataFrame(training_model, sentimentTraining):
     data['r'].append('-')
     data['bias'].append('-')
     
-    for index, label in enumerate(sentimentTraining):
-        data['alpha'+str(index)].append(label)
+    for index, item in enumerate(label):
+        data['alpha'+str(index)].append(item)
 
     # Fill cell with data training
-    for kernel in training_model:
-        for sent in training_model[kernel]:
+    for kernel in model:
+        for sent in model[kernel]:
             data['kernel'].append(kernel)
             data['sentiment'].append(sent.getSentiment())
             data['class'].append(sent.getClass())
@@ -127,7 +180,7 @@ def convertTrainingModelToDataFrame(training_model, sentimentTraining):
 
     return df
 
-def convertResultToDataFrame(result_training_model):
+def convertResultToDataFrame(results):
     data = OrderedDict()
     data.update({ 'kernel': [] })
     data.update({ 'C': [] })
@@ -147,8 +200,9 @@ def convertResultToDataFrame(result_training_model):
     data.update({ 'precision': [] })
     data.update({ 'recall': [] })
     data.update({ 'f_score': [] })
+    data.update({ 'confusion_matrix': [] })
 
-    for result in result_training_model:
+    for result in results:
         data['kernel'].append(result.getKernel())
         data['C'].append(result.getC())
         data['tol'].append(result.getTol())
@@ -167,12 +221,9 @@ def convertResultToDataFrame(result_training_model):
         data['precision'].append(result.getPrecisionScore())
         data['recall'].append(result.getRecallScore())
         data['f_score'].append(result.getFScore())
+        data['confusion_matrix'].append(result.getConfusionMagrix())
 
     df = pd.DataFrame(data, columns=data.keys())
 
     return df
-    
 
-def printList(data):
-    for row in data:
-        print row

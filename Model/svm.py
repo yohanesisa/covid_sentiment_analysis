@@ -8,7 +8,6 @@ class SVM:
         self.gamma = gamma
         self.a = a
         self.r = r
-        self.clas = clas
         self.label = label
         self.alpha = alpha 
         self.bias = bias

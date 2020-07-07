@@ -4,11 +4,14 @@ class Tweet:
         self.id = id
         self.sentence = sentence
         self.sentiment = sentiment
+        self.polarity = None
         self.tokens = None
         self.punctuation = None
         self.posTag = None
         self.sentScore = None
         self.tfidf = None
+        self.bow = None
+        # self.lex = None
 
     def getId(self):
         return self.id
@@ -22,13 +25,11 @@ class Tweet:
     def getSentiment(self):
         return self.sentiment
 
-    def getSentimentLabel(self):
-        if self.getSentiment() == 'positive':
-            return 1
-        if self.getSentiment() == 'negative':
-            return -1
-        if self.getSentiment() == 'neutral':
-            return 0
+    def setPolarity(self, data):
+        self.polarity = data
+    
+    def getPolarity(self):
+        return self.polarity
     
     def setTokens(self, data):
         self.tokens = data
@@ -60,11 +61,23 @@ class Tweet:
     def getTfidf(self):
         return self.tfidf
 
+    def setBow(self, data):
+        self.bow = data
+
+    def getBow(self):
+        return self.bow
+
+    # def setLex(self, data):
+    #     self.lex = data
+
+    # def getLex(self):
+    #     return self.lex
+
     def printData(self):
         print '-------------------------------------------------------------------------------------'
         print 'ID        : ', self.id
         print 'Sentiment : ', self.sentiment
-        print 'Tweet     : ', self.sentence
+        print 'Tweet     : ', self.sentence.encode('utf-8')
 
         if self.tokens:
             print 'Tokens    : ' + str(self.tokens)
@@ -81,6 +94,9 @@ class Tweet:
 
         if self.tfidf:
             print '# TF-IDF     : ' + str(self.tfidf)
+
+        if self.bow:
+            print '# Bag o Word : ' + str(self.bow)
             # for word in self.tfidf:
             #     print '\t' + word + '\t' + str(self.tfidf[word])
 

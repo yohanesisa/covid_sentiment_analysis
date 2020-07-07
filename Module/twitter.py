@@ -2,7 +2,7 @@ import tweepy
 
 twitterAuth = tweepy.OAuthHandler('brYXGvHTSesmDSzRtLYR2wMvT', '125Kr7B7gQJtyvlBfOTGAk1HWDp0UUKL9OQFYKoSdJmW3Nq9lx')
 twitterAuth.set_access_token('170599223-NC3EvlFxt5bvR7LqY8cQLlIz98qzuuGxKVtsKPIb', 'xwO5ZLya6ZumgxxMjOkXit8gHJeAjRg65OjzQboRZjcPI')
-api = tweepy.API(twitterAuth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+twitterAPI = tweepy.API(twitterAuth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
 def retrieveTweets(raw):
     id_dict = raw.keys()
@@ -11,7 +11,7 @@ def retrieveTweets(raw):
     try:
         for i in range((len(id_dict) / 100) + 1):
             end_loc = min((i + 1) * 100, len(id_dict))
-            result = api.statuses_lookup(id_=id_dict[i * 100:end_loc], tweet_mode="extended")
+            result = twitterAPI.statuses_lookup(id_=id_dict[i * 100:end_loc], tweet_mode="extended")
             result_full.extend(result)
         
         for tweet in result_full:

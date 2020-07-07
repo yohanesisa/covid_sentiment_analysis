@@ -33,7 +33,8 @@ class Main:
         print 'Command list: '
         print '    ----------   Dataset Menu   ----------'
         print '    a - Retrieve Tweets from Twitter'
-        print '    b - Split Data Tweets to Training & Testing'
+        print '    b - Generate Training Set & Testing Set. Training Ratio',str(ratio_a)+':'+str(+ratio_b)
+        # print '    c - Shuffle dataset'
         print ''
         print '    ----------   Training Menu   ----------'
         print '    1 - Training Preprocessing & Feature Extraction'
@@ -45,7 +46,7 @@ class Main:
         print '    7 - Calculate Testing Kernel from Features'
         print '    8 - Classication Testing Data'
         print ''
-        print '    p - Print Hyperparameter'
+        print '    p - Print Parameter'
         print '    x - Exit Program'
 
         command = raw_input("Enter command: ") 
@@ -56,7 +57,7 @@ class Main:
             raw = OrderedDict()
             
             for row in pd.read_excel(RAW_FILE).values.tolist():
-                raw.update({ row[3].split('/')[-1].encode('utf-8'): Tweet(row[3].split('/')[-1].encode('utf-8'), '', row[5]) }) #use 6 person label
+                raw.update({ row[3].split('/')[-1].encode('utf-8'): Tweet(row[3].split('/')[-1].encode('utf-8'), '', row[4]) }) #use 6 person label
 
             retrieveTweets(raw)
 
@@ -108,7 +109,7 @@ class Main:
             testing_tweets  = []
             leftover_tweets = []
 
-            ratio = int(np.ceil(float(2)/float(3)*min_len))
+            ratio = int(np.ceil(float(ratio_a)/float(ratio_b)*min_len))
 
             training_tweets.extend(picked_tweets[1][0:ratio])
             training_tweets.extend(picked_tweets[0][0:ratio])
@@ -122,6 +123,9 @@ class Main:
             leftover_tweets.extend(tweets[0])
             leftover_tweets.extend(tweets[-1])
 
+            print 'Training    : ', len(training_tweets), '@', len(training_tweets)/3
+            print 'Testing     : ', len(testing_tweets), '@', len(testing_tweets)/3
+
             # Converting raw data to pandas data frame
             convertTweetsToDataFrame(training_tweets).to_excel('Data/training/training.xlsx', index=False) 
             print '\nExported to Data/training/training.xlsx'
@@ -130,6 +134,28 @@ class Main:
             convertTweetsToDataFrame(leftover_tweets).to_excel('Data/leftover.xlsx', index=False) 
             print 'Exported to Data/leftover.xlsx\n'      
 
+        elif command is 'c':
+            print '\n----------   Shuffle Training Set and Testing Set   ----------'
+            print 'Read data tweet from', TRAINING_FILE
+
+            training_tweets = []
+            for row in pd.read_excel(TRAINING_FILE).values.tolist():
+                training_tweets.append(Tweet(str(row[0]),row[1],row[2]))
+
+            random.shuffle(training_tweets)
+
+            testing_tweets = []
+            for row in pd.read_excel(TESTING_FILE).values.tolist():
+                testing_tweets.append(Tweet(str(row[0]),row[1],row[2]))
+            
+            random.shuffle(testing_tweets)
+
+            # Converting raw data to pandas data frame
+            convertTweetsToDataFrame(training_tweets).to_excel('Data/training/training.xlsx', index=False) 
+            print '\nExported to Data/training/training.xlsx'
+            convertTweetsToDataFrame(testing_tweets).to_excel('Data/testing/testing.xlsx', index=False) 
+            print 'Exported to Data/testing/testing.xlsx'
+
         elif command is '1':
             print '\n----------   Training Preprocessing & Feature Extraction   ----------'
             print 'Read data tweet from', TRAINING_FILE
@@ -137,6 +163,7 @@ class Main:
             training_tweets = []
             for row in pd.read_excel(TRAINING_FILE).values.tolist():
                 training_tweets.append(Tweet(str(row[0]),row[1],row[2]))
+            print 'Total Tweet  : %d' % len(training_tweets)  
 
             # Do Preprocessing
             tweetPreprocessing(training_tweets)
@@ -296,7 +323,7 @@ class Main:
                                         sys.stdout.flush()
 
                                         # Search SMO
-                                        result = svm(pov=pov, K=kernel, C=c, tol=tol, max_passes=max_passes)
+                                        result = svm(pov=pov, K=kernel, C=c, tol=tol)
 
                                         counter_model += 1
 
@@ -346,7 +373,7 @@ class Main:
             while sub_command is not 'x':
                 print '-----------------------------------------------------------------------'
                 print 'Choose Kernel: '
-                print '    ----------   Calculate Testing Kernel from Features   ----------'
+                print '    ----------   Calculate Testing Kernel from Features Training and Testing   ----------'
                 print '    1 - Linear'
                 print '    2 - Polynomial'
                 print '    3 - RBF'
@@ -494,16 +521,21 @@ class Main:
                     os.system('say "classification '+kernel_type+' has finished"')  
                 
         elif command is 'p':
-            print '\n----------   List of Hyperparameter   ----------'
+            print '\n----------   List of Parameter   ----------'
+            print 'Ratio      : ', ratio_a,':',ratio_b
+            print ''
             print 'C          : ', len(Cs), ' ', str(Cs)
             print 'tols       : ', len(tols), ' ', str(tols)
-            print 'max_passes : ', str(max_passes)
             print ''
             print 'gamma      : ', len(gammas), ' ', str(gammas)
             print ''
             print 'a          : ', len(aa), ' ', str(aa)
             print 'r          : ', len(rr), ' ', str(rr)
             print ''
+
+        elif command is 's':
+            print '\n----------   Slangwords   ----------'
+            printSlangwords()
 
     print 'Program terminated'
 

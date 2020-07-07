@@ -1,6 +1,6 @@
 class Result:
 
-    def __init__(self, kernel, C, tol, gamma, a, r, pos_true, pos_pred, net_true, net_pred, neg_true, neg_pred, accuracy_score, precision_score, recall_score, f_score):
+    def __init__(self, kernel, C, tol, gamma, a, r, pos_true, pos_pred, net_true, net_pred, neg_true, neg_pred, accuracy_score, precision_score, recall_score, f_score, confusion_matrix):
         self.kernel = kernel
         self.C = C
         self.tol = tol
@@ -17,6 +17,7 @@ class Result:
         self.precision_score = precision_score
         self.recall_score = recall_score
         self.f_score = f_score
+        self.confusion_matrix = confusion_matrix
     
     def getKernel(self):
         return self.kernel
@@ -65,3 +66,6 @@ class Result:
 
     def getFScore(self):
         return self.f_score
+
+    def getConfusionMagrix(self):
+        return self.confusion_matrix

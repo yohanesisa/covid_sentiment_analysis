@@ -69,7 +69,7 @@ def calculateKernelRbf(data, index_gamma, gamma):
 
     return pd.DataFrame(kernel)
 
-def calculateKernelSigmoid(data, index_a, index_r, a, r):
+def calculateKernelSigmoid(data, index_a, a, index_r, r):
     data = data.values
     kernel = []
 

@@ -5,6 +5,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
+from sklearn.metrics import confusion_matrix
 
 def svmClassification(training_model, testing_kernel, kernel_type):
     y_true = []
@@ -45,5 +46,10 @@ def svmClassification(training_model, testing_kernel, kernel_type):
     precission = precision_score(y_true, y_pred, average='weighted')
     recall = recall_score(y_true, y_pred, average='weighted')
     f = f1_score(y_true, y_pred, average='weighted')
+    c_matrix = confusion_matrix(y_true, y_pred, labels=[1, 0, -1])
 
-    return Result(kernel=kernel_type, C=training_model[0].getC(), tol=training_model[0].getTol(), gamma=training_model[0].getGamma(), a=training_model[0].getA(), r=training_model[0].getR(), pos_true=pos_true, pos_pred=pos_pred, net_true=net_true, net_pred=net_pred, neg_true=neg_true, neg_pred=neg_pred, accuracy_score=accuracy, precision_score=precission, recall_score=recall, f_score=f)
+    # if kernel_type == 'polynomial' and training_model[0].getC() == 0.0625 and training_model[0].getTol() == 0.001:
+    #     for index in range(len(y_true)):
+    #         print y_true[index], '->' ,y_pred[index]
+
+    return Result(kernel=kernel_type, C=training_model[0].getC(), tol=training_model[0].getTol(), gamma=training_model[0].getGamma(), a=training_model[0].getA(), r=training_model[0].getR(), pos_true=pos_true, pos_pred=pos_pred, net_true=net_true, net_pred=net_pred, neg_true=neg_true, neg_pred=neg_pred, accuracy_score=accuracy, precision_score=precission, recall_score=recall, f_score=f, confusion_matrix=c_matrix)

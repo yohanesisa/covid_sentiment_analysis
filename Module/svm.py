@@ -3,12 +3,13 @@ import sys
 import numpy as np
 from Module.helper import *
 
-def svm(pov, K, C, tol, max_passes):
+def svm(pov, K, C, tol):    #SMO function
     a = [0.0] * len(K)
     a_old = [0.0] * len(K)
     b = 0.0
     passes = 0
     var = 0.00001
+    max_passes = 1
 
     y = []
     for row in K:
